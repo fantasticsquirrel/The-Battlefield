@@ -1,11 +1,17 @@
 metadata = Hash()
 calc = Hash()
+data = Hash(default_value=0)
+
+cstl_contract = Variable()
 
 random.seed()
 
 @construct
 def seed():
     metadata['operator'] = ctx.caller
+
+    cstl_contract.set('con_castle')
+
 
     #battle factors
     metadata['factorA'] = decimal('2.0')
@@ -231,14 +237,10 @@ def calc_army_update(factorC: float, factorD: float, BATTLE_M_MULT: float, BATTL
     return UNITS_TOTAL
 
 
- #move all this to construct
-cstl_contract.set('con_castle')
-data = Hash(default_value=0)
-
 @export
-def stake_CSTL(cstl_amount, IN_CSTL: float, AR_CSTL: float, HI_CSTL: float):
+def stake_CSTL(cstl_amount: int, IN_CSTL: float, AR_CSTL: float, HI_CSTL: float):
 
-#put error checking total number of castles already in contract vs total possible for the battle. 
+#put error checking total number of castles already in contract vs total possible for the battle.
 #put error about more castle types than total castles.
 #put error checking to see if a battle has been started.
 #
@@ -247,17 +249,17 @@ def stake_CSTL(cstl_amount, IN_CSTL: float, AR_CSTL: float, HI_CSTL: float):
 
     UNITS_PER_CSTL = metadata['UNITS_PER_CSTL']
 
-    IN_amount = UNITS_PER_CSTL["IN"] * IN_amount
-    AR_amount = UNITS_PER_CSTL["AR"] * AR_amount
-    HI_amount = UNITS_PER_CSTL["HI"] * HI_amount
+    IN_amount = UNITS_PER_CSTL["IN"] * IN_CSTL
+    AR_amount = UNITS_PER_CSTL["AR"] * AR_CSTL
+    HI_amount = UNITS_PER_CSTL["HI"] * HI_CSTL
 
     cstl.transfer_from(amount=cstl_amount, to=ctx.this, main_account=ctx.caller)
     data[ctx.caller] += cstl_amount
-    
+
     data['IN'] += IN_amount
     data['AR'] += AR_amount
     data['HI'] += HI_amount
-    
+
 
 
 
