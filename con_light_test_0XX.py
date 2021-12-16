@@ -1,17 +1,11 @@
 metadata = Hash()
 calc = Hash()
-data = Hash(default_value=0)
-
-cstl_contract = Variable()
 
 random.seed()
 
 @construct
 def seed():
     metadata['operator'] = ctx.caller
-
-    cstl_contract.set('con_castle')
-
 
     #battle factors
     metadata['factorA'] = decimal('2.0')
@@ -176,6 +170,8 @@ def battle():
         UNITS_TOTAL = calc_army_update(factorC, factorD, BATTLE_M_MULT, BATTLE_R_MULT, IN_PARAM, AR_PARAM, HI_PARAM, GO_PARAM, OA_PARAM, OR_PARAM) #ADD ALL OTHER PARAM LISTS HERE AS UNITS ARE ADDED
 
     calc['Battle_Results'] = f'There are {int(IN_PARAM[6])} infantry, {int(AR_PARAM[6])} archers, and {int(HI_PARAM[6])} heavy infantry remaining in the LIGHT army, and there are {int(GO_PARAM[6])} goblins, {int(OA_PARAM[6])} orc archers, and {int(OR_PARAM[6])} orcs remaining in the DARK army.'
+    
+    
 
 @export
 def calc_losses(unit_param: float, factorE: float, multiplier: float, lower : float, upper: float, STR_bonus: float, faction_unit: str, faction_other: str, unit_type: str, BATTLE_M_MULT: float, BATTLE_R_MULT: float, Mweak1: str='PLACEHOLDER', Mweak1count: float=0, Mweak2: str='PLACEHOLDER', Mweak2count: float=0,Rweak1: str='PLACEHOLDER', Rweak1count: float=0,Rweak2: str='PLACEHOLDER',Rweak2count: float=0):
@@ -237,10 +233,14 @@ def calc_army_update(factorC: float, factorD: float, BATTLE_M_MULT: float, BATTL
     return UNITS_TOTAL
 
 
-@export
-def stake_CSTL(cstl_amount: int, IN_CSTL: float, AR_CSTL: float, HI_CSTL: float):
+ #move all this to construct
+cstl_contract.set('con_castle')
+data = Hash(default_value=0)
 
-#put error checking total number of castles already in contract vs total possible for the battle.
+@export
+def stake_CSTL(cstl_amount, IN_CSTL: float, AR_CSTL: float, HI_CSTL: float):
+
+#put error checking total number of castles already in contract vs total possible for the battle. 
 #put error about more castle types than total castles.
 #put error checking to see if a battle has been started.
 #
@@ -249,18 +249,30 @@ def stake_CSTL(cstl_amount: int, IN_CSTL: float, AR_CSTL: float, HI_CSTL: float)
 
     UNITS_PER_CSTL = metadata['UNITS_PER_CSTL']
 
-    IN_amount = UNITS_PER_CSTL["IN"] * IN_CSTL
-    AR_amount = UNITS_PER_CSTL["AR"] * AR_CSTL
-    HI_amount = UNITS_PER_CSTL["HI"] * HI_CSTL
+    IN_amount = UNITS_PER_CSTL["IN"] * IN_amount
+    AR_amount = UNITS_PER_CSTL["AR"] * AR_amount
+    HI_amount = UNITS_PER_CSTL["HI"] * HI_amount
 
     cstl.transfer_from(amount=cstl_amount, to=ctx.this, main_account=ctx.caller)
     data[ctx.caller] += cstl_amount
-
+    
     data['IN'] += IN_amount
     data['AR'] += AR_amount
     data['HI'] += HI_amount
+    
+
+@export
+def disperse():
+  #calculate winnings where winners get 1.09, loser gets 0.90 and house gets 0.01
+  
+  
 
 
+
+@export
+def emergency_return():
+  #add only owner can call
+  #check all balances and then send all funds to original senders. 
 
 
 
