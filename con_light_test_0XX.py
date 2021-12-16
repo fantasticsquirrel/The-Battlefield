@@ -1,11 +1,25 @@
 metadata = Hash()
 calc = Hash()
+data = Hash(default_value=0)
+
+cstl_contract = Variable()
+fort_contract = Variable()
 
 random.seed()
 
 @construct
 def seed():
     metadata['operator'] = ctx.caller
+
+    cstl_contract.set('con_castle')
+    fort_contract.set('con_fortress')
+
+    data['cstl_staked_wallets'] = {}
+    data['fort_staked_wallets'] = {}
+
+    #prize calclulation Parameters
+    metadata['winner_percent'] = decimal('0.09')
+    metadata['house_percent'] = decimal('0.01')
 
     #battle factors
     metadata['factorA'] = decimal('2.0')
@@ -73,6 +87,8 @@ def seed():
         "HI": 67
     }
 
+
+
 @export
 def change_metadata(key: str, new_value: str, convert_to_decimal: bool=False):
     assert ctx.caller == metadata['operator'], "only operator can set metadata"
@@ -118,6 +134,8 @@ def update_units_factors():
 @export
 def battle():
 
+#ADD LOGIC TO CHECK AND MAKE SURE data['total_cstl'] = data['total_fort'] otherwise don't start battle
+
     factor_list = calc['factor_list']
     factorC = factor_list[0]
     factorD = factor_list[1]
@@ -127,14 +145,7 @@ def battle():
     multiplier = factor_list[5]
     STR_bonus = factor_list[6]
 
-    IN_PARAM = calc['IN','PARAM']
-    #IN_MS = IN_PARAM[0]
-    #IN_MD = IN_PARAM[1]
-    #IN_RS = IN_PARAM[2]
-    #IN_RD = IN_PARAM[3]
-    #IN_MDF = IN_PARAM[4]
-    #IN_RDF = IN_PARAM[5]
-    #IN_count = IN_PARAM[6]
+    IN_PARAM = calc['IN','PARAM'] #IN_MS = IN_PARAM[0] :: #IN_MD = IN_PARAM[1] :: #IN_RS = IN_PARAM[2] :: #IN_RD = IN_PARAM[3] :: #IN_MDF = IN_PARAM[4] :: #IN_RDF = IN_PARAM[5] :: #IN_count = IN_PARAM[6]
     AR_PARAM = calc['AR','PARAM']
     HI_PARAM = calc['HI','PARAM']
 
@@ -146,9 +157,9 @@ def battle():
     BATTLE_R_MULT = 1
 
     #battle setup
-    IN_PARAM[6] = metadata['TEMP_IN'] #add all other units here as they're added
-    AR_PARAM[6] = metadata['TEMP_AR']
-    HI_PARAM[6] = metadata['TEMP_HI']
+    IN_PARAM[6] = data['IN'] #add all other units here as they're added
+    AR_PARAM[6] = data['AR']
+    HI_PARAM[6] = data['HI']
 
     GO_PARAM[6] = metadata['TEMP_GO']
     OA_PARAM[6] = metadata['TEMP_OA']
@@ -170,8 +181,19 @@ def battle():
         UNITS_TOTAL = calc_army_update(factorC, factorD, BATTLE_M_MULT, BATTLE_R_MULT, IN_PARAM, AR_PARAM, HI_PARAM, GO_PARAM, OA_PARAM, OR_PARAM) #ADD ALL OTHER PARAM LISTS HERE AS UNITS ARE ADDED
 
     calc['Battle_Results'] = f'There are {int(IN_PARAM[6])} infantry, {int(AR_PARAM[6])} archers, and {int(HI_PARAM[6])} heavy infantry remaining in the LIGHT army, and there are {int(GO_PARAM[6])} goblins, {int(OA_PARAM[6])} orc archers, and {int(OR_PARAM[6])} orcs remaining in the DARK army.'
-    
-    
+    if UNITS_TOTAL[0] > 0 and UNITS_TOTAL[1] <= 0:
+        winner = 'L'
+    elif UNITS_TOTAL[1] > 0 and UNITS_TOTAL[0] <= 0:
+        winner = 'D'
+    else:
+        winner = 'error'
+
+
+
+    disperse(winner)
+
+    data['cstl_staked_wallets'].clear() #clears all staked wallets from storage so a new battle can start
+    data['fort_staked_wallets'].clear()
 
 @export
 def calc_losses(unit_param: float, factorE: float, multiplier: float, lower : float, upper: float, STR_bonus: float, faction_unit: str, faction_other: str, unit_type: str, BATTLE_M_MULT: float, BATTLE_R_MULT: float, Mweak1: str='PLACEHOLDER', Mweak1count: float=0, Mweak2: str='PLACEHOLDER', Mweak2count: float=0,Rweak1: str='PLACEHOLDER', Rweak1count: float=0,Rweak2: str='PLACEHOLDER',Rweak2count: float=0):
@@ -233,46 +255,68 @@ def calc_army_update(factorC: float, factorD: float, BATTLE_M_MULT: float, BATTL
     return UNITS_TOTAL
 
 
- #move all this to construct
-cstl_contract.set('con_castle')
-data = Hash(default_value=0)
-
 @export
-def stake_CSTL(cstl_amount, IN_CSTL: float, AR_CSTL: float, HI_CSTL: float):
+def stake_CSTL(cstl_amount: int, IN_CSTL: float, AR_CSTL: float, HI_CSTL: float):
 
-#put error checking total number of castles already in contract vs total possible for the battle. 
+#put error checking total number of castles already in contract vs total possible for the battle.
 #put error about more castle types than total castles.
 #put error checking to see if a battle has been started.
-#
+#copy this whole function but make it for FORT
 
+    staked_wallets = data['cstl_staked_wallets']
     cstl = importlib.import_module(cstl_contract.get())
 
     UNITS_PER_CSTL = metadata['UNITS_PER_CSTL']
 
-    IN_amount = UNITS_PER_CSTL["IN"] * IN_amount
-    AR_amount = UNITS_PER_CSTL["AR"] * AR_amount
-    HI_amount = UNITS_PER_CSTL["HI"] * HI_amount
+    IN_amount = UNITS_PER_CSTL["IN"] * IN_CSTL
+    AR_amount = UNITS_PER_CSTL["AR"] * AR_CSTL
+    HI_amount = UNITS_PER_CSTL["HI"] * HI_CSTL
 
     cstl.transfer_from(amount=cstl_amount, to=ctx.this, main_account=ctx.caller)
-    data[ctx.caller] += cstl_amount
-    
+
+    if ctx.caller not in staked_wallets:
+        staked_wallets.update({ctx.caller: cstl_amount})
+    else:
+        staked_wallets[ctx.caller] += cstl_amount
+
+    data['cstl_staked_wallets'] = staked_wallets #adds the staker to the dict for calculating rewards for winners and losers
+    data['total_cstl'] += cstl_amount #adds total CSTL to storage for calculating rewards
+
     data['IN'] += IN_amount
     data['AR'] += AR_amount
     data['HI'] += HI_amount
-    
-
-@export
-def disperse():
-  #calculate winnings where winners get 1.09, loser gets 0.90 and house gets 0.01
-  
-  
 
 
+def disperse(winner: str):
+    #calculate winnings where winners get 1.09, loser gets 0.90 and house gets 0.01
 
-@export
-def emergency_return():
-  #add only owner can call
-  #check all balances and then send all funds to original senders. 
+    cstl = importlib.import_module(cstl_contract.get())
+    fort = importlib.import_module(fort_contract.get())
+
+    cstl_staked_wallets = data['cstl_staked_wallets']
+    fort_staked_wallets = data['fort_staked_wallets']
+    winner_percent = metadata['winner_percent']
+    house_percent = metadata['house_percent']
+    loser_percent = 1 - winner_percent - house_percent
+
+    if winner == 'L':
+        #send winnings to CASTLE stakers
+        for key, value in dict(cstl_staked_wallets).items():
+            cstl.transfer(amount=value, to=key)
+            fort.transfer(amount=value * winner_percent, to=key)
+            fort.transfer(amount=value * house_percent, to=OWNER) #make variable for OWNER
+
+        for key, value in dict(fort_staked_wallets).items():
+            fort.transfer(amount=value * loser_percent, to=key)
+    if winner == 'D':
+        #send winnings to FORTRESS stakers
+        for key, value in dict(fort_staked_wallets).items():
+            fort.transfer(amount=value, to=key)
+            cstl.transfer(amount=value * winner_percent, to=key)
+            cstl.transfer(amount=value * house_percent, to=OWNER)
+
+        for key, value in dict(cstl_staked_wallets).items():
+            cstl.transfer(amount=value * loser_percent, to=key)
 
 
 
