@@ -87,6 +87,13 @@ def seed():
         "HI": 67
     }
 
+    #Dark units per castle
+
+    metadata['UNITS_PER_FORT']={
+        "GO": 333,
+        "OA": 71,
+        "OR": 100
+    }
 
 
 @export
@@ -258,6 +265,8 @@ def calc_army_update(factorC: float, factorD: float, BATTLE_M_MULT: float, BATTL
 @export
 def stake_CSTL(cstl_amount: int, IN_CSTL: float, AR_CSTL: float, HI_CSTL: float):
 
+assert IN_CSTL + AR_CSTL + HI_CSTL == cstl_amount, "total number of CSTL must equal the sum of the CSTL used to train each unit"
+assert
 #put error checking total number of castles already in contract vs total possible for the battle.
 #put error about more castle types than total castles.
 #put error checking to see if a battle has been started.
