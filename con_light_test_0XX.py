@@ -49,6 +49,11 @@ def seed():
     metadata['HI_RS'] = decimal('0.0')
     metadata['HI_RD'] = decimal('4.0')
 
+    metadata['CA_MS'] = decimal('7.0')
+    metadata['CA_MD'] = decimal('4.0')
+    metadata['CA_RS'] = decimal('2.0')
+    metadata['CA_RD'] = decimal('3.0')
+
     #DARK Unit Base Parameters
     metadata['GO_MS'] = decimal('1.0')
     metadata['GO_MD'] = decimal('0.75')
@@ -65,27 +70,25 @@ def seed():
     metadata['OR_RS'] = decimal('6.0')
     metadata['OR_RD'] = decimal('2.0')
 
-    #TEMPORARY PLACEHOLDERS FOR TROOP COUNTS
-    metadata['TEMP_IN'] = decimal('200.0')
-    metadata['TEMP_AR'] = decimal('50.0')
-    metadata['TEMP_HI'] = decimal('75.0')
-
-    metadata['TEMP_GO'] = decimal('400.0')
-    metadata['TEMP_OA'] = decimal('25.0')
-    metadata['TEMP_OR'] = decimal('100.0')
+    metadata['WO_MS'] = decimal('5.0')
+    metadata['WO_MD'] = decimal('5.0')
+    metadata['WO_RS'] = decimal('0.0')
+    metadata['WO_RD'] = decimal('3.0')
 
     #Light units per castle
     metadata['UNITS_PER_CSTL']={
         "IN": 200,
         "AR": 91,
-        "HI": 67
+        "HI": 67,
+        "CA": 48
     }
 
     #Dark units per fort
     metadata['UNITS_PER_FORT']={
         "GO": 333,
         "OA": 71,
-        "OR": 100
+        "OR": 100,
+        "WO": 59
     }
 
     cstl_contract.set('con_castle')
@@ -95,6 +98,8 @@ def seed():
     data['fort_staked_wallets'] = {}
 
     metadata['CSTL_FORT_PER_BATTLE'] = 100
+
+    metadata['terrain_type'] = 'none' #may not need this here long term.
 
 @export
 def change_metadata(key: str, new_value: str, convert_to_decimal: bool=False):
@@ -119,10 +124,14 @@ def update_units_factors():
     HI_MDF = factorA * metadata['HI_MD'] + (factorB * metadata['HI_MD']) ** 3
     HI_RDF = factorA * metadata['HI_RD'] + (factorB * metadata['HI_RD']) ** 3
 
+    CA_MDF = factorA * metadata['CA_MD'] + (factorB * metadata['CA_MD']) ** 3
+    CA_RDF = factorA * metadata['CA_RD'] + (factorB * metadata['CA_RD']) ** 3
+
 
     calc['IN','PARAM'] = [metadata['IN_MS'], metadata['IN_MD'], metadata['IN_RS'], metadata['IN_RD'], IN_MDF, IN_RDF, 0.0] #ADD STRENGTHS AND WEAKNESSES TO UNIT PARAMS
     calc['AR','PARAM'] = [metadata['AR_MS'], metadata['AR_MD'], metadata['AR_RS'], metadata['AR_RD'], AR_MDF, AR_RDF, 0.0] #ADD STRENGTHS AND WEAKNESSES TO UNIT PARAMS
     calc['HI','PARAM'] = [metadata['HI_MS'], metadata['HI_MD'], metadata['HI_RS'], metadata['HI_RD'], HI_MDF, HI_RDF, 0.0] #ADD STRENGTHS AND WEAKNESSES TO UNIT PARAMS
+    calc['CA','PARAM'] = [metadata['CA_MS'], metadata['CA_MD'], metadata['CA_RS'], metadata['CA_RD'], CA_MDF, CA_RDF, 0.0] #ADD STRENGTHS AND WEAKNESSES TO UNIT PARAMS
 
     #DARK Unit Parameter factors
     GO_MDF = factorA * metadata['GO_MD'] + (factorB * metadata['GO_MD']) ** 3
@@ -134,9 +143,13 @@ def update_units_factors():
     OR_MDF = factorA * metadata['OR_MD'] + (factorB * metadata['OR_MD']) ** 3
     OR_RDF = factorA * metadata['OR_RD'] + (factorB * metadata['OR_RD']) ** 3
 
+    WO_MDF = factorA * metadata['WO_MD'] + (factorB * metadata['WO_MD']) ** 3
+    WO_RDF = factorA * metadata['WO_RD'] + (factorB * metadata['WO_RD']) ** 3
+
     calc['GO','PARAM'] = [metadata['GO_MS'], metadata['GO_MD'], metadata['GO_RS'], metadata['GO_RD'], GO_MDF, GO_RDF, 0.0]
     calc['OA','PARAM'] = [metadata['OA_MS'], metadata['OA_MD'], metadata['OA_RS'], metadata['OA_RD'], OA_MDF, OA_RDF, 0.0]
     calc['OR','PARAM'] = [metadata['OR_MS'], metadata['OR_MD'], metadata['OR_RS'], metadata['OR_RD'], OR_MDF, OR_RDF, 0.0]
+    calc['WO','PARAM'] = [metadata['WO_MS'], metadata['WO_MD'], metadata['WO_RS'], metadata['WO_RD'], WO_MDF, WO_RDF, 0.0]
 
     #update calc list from metadata parameters. This will be called instead of each individual metadata tag to reduce stamp usage.
     calc['factor_list'] = [metadata['factorC'], metadata['factorD'], metadata['factorE'], metadata['lower'], metadata['upper'], metadata['multiplier'], metadata['STR_bonus']]
@@ -146,11 +159,11 @@ def battle():
 
     total_cstl = data['total_cstl']
     total_fort = data['total_fort']
-    assert total_cstl == total_fort and total_cstl == metadata['CSTL_FORT_PER_BATTLE'], f'There are {total_cstl} CSTL and {total_fort} FORT staked. These must be equal for a battle to be initiated.'
+    assert total_cstl == total_fort and total_cstl == metadata['CSTL_FORT_PER_BATTLE'], f'There are {total_cstl} CSTL and {total_fort} FORT staked. These must be equal and filled to max capacity for a battle to be initiated.'
     operator = metadata['operator']
     terrains = ['none', 'fields', 'forests', 'hills', 'chaotic']
-    terrain_type = terrains[random.randint(0, 3)]
-    data['terrain_type'] = terrain_type #not needed long term since it's just to see what terrain type was picked.
+    terrain_type = terrains[random.randint(0, 3)] #terrains[random.randint(0, 3)] for random terrain
+    data['terrain_type'] = metadata['terrain_type'] #not needed long term since it's just to see what terrain type was picked.
 
     factor_list = calc['factor_list']
     factorC = factor_list[0]
@@ -164,27 +177,28 @@ def battle():
     IN_PARAM = calc['IN','PARAM'] #IN_MS = IN_PARAM[0] :: #IN_MD = IN_PARAM[1] :: #IN_RS = IN_PARAM[2] :: #IN_RD = IN_PARAM[3] :: #IN_MDF = IN_PARAM[4] :: #IN_RDF = IN_PARAM[5] :: #IN_count = IN_PARAM[6]
     AR_PARAM = calc['AR','PARAM']
     HI_PARAM = calc['HI','PARAM']
+    CA_PARAM = calc['CA','PARAM']
 
     GO_PARAM = calc['GO','PARAM']
     OA_PARAM = calc['OA','PARAM']
     OR_PARAM = calc['OR','PARAM']
-
-    #MULTIPLIER to change range vs melee strength through the battle. For now it's set to 1 for the whole battle
-    BATTLE_M_MULT = 1
-    BATTLE_R_MULT = 1
+    WO_PARAM = calc['WO','PARAM']
 
     #battle setup
     IN_PARAM[6] = data['IN'] #add all other units here as they're added
     AR_PARAM[6] = data['AR']
     HI_PARAM[6] = data['HI']
+    CA_PARAM[6] = data['CA']
 
     GO_PARAM[6] = data['GO']
     OA_PARAM[6] = data['OA']
     OR_PARAM[6] = data['OR']
-
-    UNITS_TOTAL = calc_army_update(factorC, factorD, BATTLE_M_MULT, BATTLE_R_MULT, IN_PARAM, AR_PARAM, HI_PARAM, GO_PARAM, OA_PARAM, OR_PARAM) #ADD ALL OTHER PARAM LISTS HERE AS UNITS ARE ADDED
+    WO_PARAM[6] = data['WO']
 
     battle_turn = 0
+    battle_mult = battle_mult_update(terrain_type, battle_turn)
+
+    UNITS_TOTAL = calc_army_update(factorC, factorD, battle_mult[0], battle_mult[1], IN_PARAM, AR_PARAM, HI_PARAM, CA_PARAM, GO_PARAM, OA_PARAM, OR_PARAM, WO_PARAM) #ADD ALL OTHER PARAM LISTS HERE AS UNITS ARE ADDED
 
     while UNITS_TOTAL[0] > 0 and UNITS_TOTAL[1] > 0:
 
@@ -193,12 +207,14 @@ def battle():
         IN_PARAM[6] = calc_losses(IN_PARAM, factorE, multiplier, lower, upper, STR_bonus, 'L', 'D', 'IN', battle_mult[0], battle_mult[1]) # 3 STRING paremeters are faction of unit, opposing faction, unit name
         AR_PARAM[6] = calc_losses(AR_PARAM, factorE, multiplier, lower, upper, STR_bonus, 'L', 'D', 'AR', battle_mult[0], battle_mult[1]) # 3 STRING paremeters are faction of unit, opposing faction, unit name
         HI_PARAM[6] = calc_losses(HI_PARAM, factorE, multiplier, lower, upper, STR_bonus, 'L', 'D', 'HI', battle_mult[0], battle_mult[1]) # 3 STRING paremeters are faction of unit, opposing faction, unit name
+        CA_PARAM[6] = calc_losses(CA_PARAM, factorE, multiplier, lower, upper, STR_bonus, 'L', 'D', 'CA', battle_mult[0], battle_mult[1]) # 3 STRING paremeters are faction of unit, opposing faction, unit name
 
         GO_PARAM[6] = calc_losses(GO_PARAM, factorE, multiplier, lower, upper, STR_bonus, 'D', 'L', 'GO', battle_mult[0], battle_mult[1])
         OA_PARAM[6] = calc_losses(OA_PARAM, factorE, multiplier, lower, upper, STR_bonus, 'D', 'L', 'OA', battle_mult[0], battle_mult[1])
         OR_PARAM[6] = calc_losses(OR_PARAM, factorE, multiplier, lower, upper, STR_bonus, 'D', 'L', 'OR', battle_mult[0], battle_mult[1])
+        WO_PARAM[6] = calc_losses(WO_PARAM, factorE, multiplier, lower, upper, STR_bonus, 'D', 'L', 'WO', battle_mult[0], battle_mult[1])
 
-        UNITS_TOTAL = calc_army_update(factorC, factorD, BATTLE_M_MULT, BATTLE_R_MULT, IN_PARAM, AR_PARAM, HI_PARAM, GO_PARAM, OA_PARAM, OR_PARAM) #ADD ALL OTHER PARAM LISTS HERE AS UNITS ARE ADDED
+        UNITS_TOTAL = calc_army_update(factorC, factorD, battle_mult[0], battle_mult[1], IN_PARAM, AR_PARAM, HI_PARAM, CA_PARAM, GO_PARAM, OA_PARAM, OR_PARAM, WO_PARAM) #ADD ALL OTHER PARAM LISTS HERE AS UNITS ARE ADDED
         battle_turn += 1
 
     if UNITS_TOTAL[0] > 0 and UNITS_TOTAL[1] <= 0:
@@ -208,6 +224,8 @@ def battle():
     else:
         winner = 'error'
 
+    calc['Battle_Results'] = f'There are {IN_PARAM[6]} infantry, {AR_PARAM[6]} archers, {HI_PARAM[6]} heavy infantry, {CA_PARAM[6]} cavalry remaining in the LIGHT army, and there are {GO_PARAM[6]} goblins, {OA_PARAM[6]} orc archers, {OR_PARAM[6]} orcs, {WO_PARAM[6]} wolves remaining in the DARK army.'
+
     disperse(operator, winner)
 
     data['cstl_staked_wallets'].clear() #clears all staked wallets from storage so a new battle can start
@@ -216,10 +234,14 @@ def battle():
     data['IN'] = 0 #add all other units here as they're added
     data['AR'] = 0
     data['HI'] = 0
+    data['CA'] = 0
 
     data['GO'] = 0
     data['OA'] = 0
     data['OR'] = 0
+    data['WO'] = 0
+
+    data['total_turns'] = battle_turn #may not need long term. This is just to track the total turns a battle took.
 
 def battle_mult_update(terrain_type, battle_turn): # ['none', 'fields', 'forests', 'hills', 'chaotic']
     if terrain_type == 'none':
@@ -269,27 +291,28 @@ def calc_losses(unit_param: float, factorE: float, multiplier: float, lower : fl
 
     return unit_update
 
-@export
-def calc_army_update(factorC: float, factorD: float, BATTLE_M_MULT: float, BATTLE_R_MULT: float, IN_PARAM: float, AR_PARAM: float, HI_PARAM: float, GO_PARAM: float, OA_PARAM: float, OR_PARAM: float): #ADD ALL OTHER PARAM LISTS HERE AS UNITS ARE ADDED
+def calc_army_update(factorC, factorD, BATTLE_M_MULT, BATTLE_R_MULT, IN_PARAM, AR_PARAM, HI_PARAM, CA_PARAM, GO_PARAM, OA_PARAM, OR_PARAM, WO_PARAM): #ADD ALL OTHER PARAM LISTS HERE AS UNITS ARE ADDED
 
     L_UNITS_IN = IN_PARAM[6]
     L_UNITS_AR = AR_PARAM[6]
     L_UNITS_HI = HI_PARAM[6]
+    L_UNITS_CA = CA_PARAM[6]
 
     D_UNITS_GO = GO_PARAM[6]
     D_UNITS_OA = OA_PARAM[6]
     D_UNITS_OR = OR_PARAM[6]
+    D_UNITS_WO = WO_PARAM[6]
 
-    L_UNITS_TOTAL = L_UNITS_IN + L_UNITS_AR + L_UNITS_HI #add all other L units to this variable when other units are added
+    L_UNITS_TOTAL = L_UNITS_IN + L_UNITS_AR + L_UNITS_HI + L_UNITS_CA #add all other L units to this variable when other units are added
 
-    D_UNITS_TOTAL = D_UNITS_GO + D_UNITS_OA + D_UNITS_OR #add all other D units to this variable when other units are added
+    D_UNITS_TOTAL = D_UNITS_GO + D_UNITS_OA + D_UNITS_OR + D_UNITS_WO #add all other D units to this variable when other units are added
 
     if L_UNITS_TOTAL > 0:
         #calculate updated L army totals
-        L_ARMY_MS = (L_UNITS_IN * IN_PARAM[0] + L_UNITS_AR * AR_PARAM[0] + L_UNITS_HI * HI_PARAM[0]) * BATTLE_M_MULT #add all other L unit strengths here when other units are added
-        L_ARMY_MD = (L_UNITS_IN * IN_PARAM[1] + L_UNITS_AR * AR_PARAM[1] + L_UNITS_HI * HI_PARAM[1]) #add all other L unit DEFENSE here when other units are added
-        L_ARMY_RS = (L_UNITS_IN * IN_PARAM[2] + L_UNITS_AR * AR_PARAM[2] + L_UNITS_HI * HI_PARAM[2]) * BATTLE_R_MULT
-        L_ARMY_RD = (L_UNITS_IN * IN_PARAM[3] + L_UNITS_AR * AR_PARAM[3] + L_UNITS_HI * HI_PARAM[3])
+        L_ARMY_MS = (L_UNITS_IN * IN_PARAM[0] + L_UNITS_AR * AR_PARAM[0] + L_UNITS_HI * HI_PARAM[0] + L_UNITS_CA * CA_PARAM[0]) * BATTLE_M_MULT #add all other L unit strengths here when other units are added
+        L_ARMY_MD = (L_UNITS_IN * IN_PARAM[1] + L_UNITS_AR * AR_PARAM[1] + L_UNITS_HI * HI_PARAM[1] + L_UNITS_CA * CA_PARAM[1]) #add all other L unit DEFENSE here when other units are added
+        L_ARMY_RS = (L_UNITS_IN * IN_PARAM[2] + L_UNITS_AR * AR_PARAM[2] + L_UNITS_HI * HI_PARAM[2] + L_UNITS_CA * CA_PARAM[2]) * BATTLE_R_MULT
+        L_ARMY_RD = (L_UNITS_IN * IN_PARAM[3] + L_UNITS_AR * AR_PARAM[3] + L_UNITS_HI * HI_PARAM[3] + L_UNITS_CA * CA_PARAM[3])
         L_ARMY_AVG_MS = L_ARMY_MS / L_UNITS_TOTAL
         L_ARMY_AVG_RS = L_ARMY_RS / L_UNITS_TOTAL
         L_ARMY_MS_FACTOR = factorC * L_ARMY_AVG_MS + factorD ** L_ARMY_AVG_MS
@@ -298,25 +321,25 @@ def calc_army_update(factorC: float, factorD: float, BATTLE_M_MULT: float, BATTL
 
     if D_UNITS_TOTAL > 0:
         #calculate updated D army totals
-        D_ARMY_MS = (D_UNITS_GO * GO_PARAM[0] + D_UNITS_OA * OA_PARAM[0] + D_UNITS_OR * OR_PARAM[0]) * BATTLE_M_MULT
-        D_ARMY_MD = (D_UNITS_GO * GO_PARAM[1] + D_UNITS_OA * OA_PARAM[1] + D_UNITS_OR * OR_PARAM[1])
-        D_ARMY_RS = (D_UNITS_GO * GO_PARAM[2] + D_UNITS_OA * OA_PARAM[2] + D_UNITS_OR * OR_PARAM[2]) * BATTLE_R_MULT
-        D_ARMY_RD = (D_UNITS_GO * GO_PARAM[3] + D_UNITS_OA * OA_PARAM[3] + D_UNITS_OR * OR_PARAM[3])
+        D_ARMY_MS = (D_UNITS_GO * GO_PARAM[0] + D_UNITS_OA * OA_PARAM[0] + D_UNITS_OR * OR_PARAM[0] + D_UNITS_WO * WO_PARAM[0]) * BATTLE_M_MULT
+        D_ARMY_MD = (D_UNITS_GO * GO_PARAM[1] + D_UNITS_OA * OA_PARAM[1] + D_UNITS_OR * OR_PARAM[1] + D_UNITS_WO * WO_PARAM[1])
+        D_ARMY_RS = (D_UNITS_GO * GO_PARAM[2] + D_UNITS_OA * OA_PARAM[2] + D_UNITS_OR * OR_PARAM[2] + D_UNITS_WO * WO_PARAM[2]) * BATTLE_R_MULT
+        D_ARMY_RD = (D_UNITS_GO * GO_PARAM[3] + D_UNITS_OA * OA_PARAM[3] + D_UNITS_OR * OR_PARAM[3] + D_UNITS_WO * WO_PARAM[3])
         D_ARMY_AVG_MS = D_ARMY_MS / D_UNITS_TOTAL
         D_ARMY_AVG_RS = D_ARMY_RS / D_UNITS_TOTAL
         D_ARMY_MS_FACTOR = factorC * D_ARMY_AVG_MS + factorD ** D_ARMY_AVG_MS
         D_ARMY_RS_FACTOR = factorC * D_ARMY_AVG_RS + factorD ** D_ARMY_AVG_RS
         calc['D','ARMY','PROPERTIES'] = [D_ARMY_MS, D_ARMY_MD, D_ARMY_RS, D_ARMY_RD, D_ARMY_MS_FACTOR, D_ARMY_RS_FACTOR]
 
-    UNITS_TOTAL = [L_UNITS_TOTAL,D_UNITS_TOTAL]
+    UNITS_TOTAL = [L_UNITS_TOTAL, D_UNITS_TOTAL]
 
     return UNITS_TOTAL
 
 
 @export
-def stake_CSTL(cstl_amount: int, IN_CSTL: float, AR_CSTL: float, HI_CSTL: float):
+def stake_CSTL(cstl_amount: int, IN_CSTL: float, AR_CSTL: float, HI_CSTL: float, CA_CSTL: float):
 
-    assert IN_CSTL + AR_CSTL + HI_CSTL == cstl_amount, "Total number of CSTL must equal the sum of the CSTL used to train each unit."
+    assert IN_CSTL + AR_CSTL + HI_CSTL + CA_CSTL == cstl_amount, "Total number of CSTL must equal the sum of the CSTL used to train each unit."
     assert data['total_cstl'] + cstl_amount <= metadata['CSTL_FORT_PER_BATTLE'], f'You are attempting to stake {cstl_amount} which is more than the {metadata["CSTL_FORT_PER_BATTLE"] - data["total_cstl"]} remaining to be staked for this battle. Please try again with a smaller number.'
 #put error checking to see if a battle has been started.
 #copy this whole function but make it for FORT
@@ -329,6 +352,7 @@ def stake_CSTL(cstl_amount: int, IN_CSTL: float, AR_CSTL: float, HI_CSTL: float)
     IN_amount = UNITS_PER_CSTL["IN"] * IN_CSTL
     AR_amount = UNITS_PER_CSTL["AR"] * AR_CSTL
     HI_amount = UNITS_PER_CSTL["HI"] * HI_CSTL
+    CA_amount = UNITS_PER_CSTL["CA"] * CA_CSTL
 
     cstl.transfer_from(amount=cstl_amount, to=ctx.this, main_account=ctx.caller)
 
@@ -343,11 +367,12 @@ def stake_CSTL(cstl_amount: int, IN_CSTL: float, AR_CSTL: float, HI_CSTL: float)
     data['IN'] += IN_amount
     data['AR'] += AR_amount
     data['HI'] += HI_amount
+    data['CA'] += CA_amount
 
 @export
-def stake_FORT(fort_amount: int, GO_FORT: float, OA_FORT: float, OR_FORT: float):
+def stake_FORT(fort_amount: int, GO_FORT: float, OA_FORT: float, OR_FORT: float,  WO_FORT: float):
 
-    assert GO_FORT + OA_FORT + OR_FORT == fort_amount, "Total number of FORT must equal the sum of the FORT used to train each unit."
+    assert GO_FORT + OA_FORT + OR_FORT + WO_FORT == fort_amount, "Total number of FORT must equal the sum of the FORT used to train each unit."
     assert data['total_fort'] + fort_amount <= metadata['CSTL_FORT_PER_BATTLE'], f'You are attempting to stake {fort_amount} which is more than the {metadata["CSTL_FORT_PER_BATTLE"] - data["total_fort"]} remaining to be staked for this battle. Please try again with a smaller number.'
 #put error checking to see if a battle has been started.
 #copy this whole function but make it for FORT
@@ -360,6 +385,7 @@ def stake_FORT(fort_amount: int, GO_FORT: float, OA_FORT: float, OR_FORT: float)
     GO_amount = UNITS_PER_FORT["GO"] * GO_FORT
     OA_amount = UNITS_PER_FORT["OA"] * OA_FORT
     OR_amount = UNITS_PER_FORT["OR"] * OR_FORT
+    WO_amount = UNITS_PER_FORT["WO"] * WO_FORT
 
     fort.transfer_from(amount=fort_amount, to=ctx.this, main_account=ctx.caller)
 
@@ -374,6 +400,7 @@ def stake_FORT(fort_amount: int, GO_FORT: float, OA_FORT: float, OR_FORT: float)
     data['GO'] += GO_amount
     data['OA'] += OA_amount
     data['OR'] += OR_amount
+    data['WO'] += WO_amount
 
 def disperse(operator: str, winner: str):
     #calculate winnings where winners get 1.09, loser gets 0.90 and house gets 0.01
@@ -417,17 +444,3 @@ def disperse(operator: str, winner: str):
 
 
 
-
-
-
-#
-
-
-
-
-
-
-
-
-
-#
