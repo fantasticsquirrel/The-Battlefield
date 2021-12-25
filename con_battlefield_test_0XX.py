@@ -177,7 +177,7 @@ def battle():
     assert total_cstl == total_fort and total_cstl == metadata['CSTL_FORT_PER_BATTLE'], f'There are {total_cstl} CSTL and {total_fort} FORT staked. These must be equal and filled to max capacity for a battle to be initiated.'
     operator = metadata['operator']
     terrains = ['none', 'fields', 'forests', 'hills', 'chaotic']
-    terrain_type = terrains[random.randint(0, 3)] #terrains[random.randint(0, 3)] for random terrain
+    terrain_type = metadata['terrain_type'] #terrains[random.randint(0, 3)] for random terrain
     data['terrain_type'] = metadata['terrain_type'] #not needed long term since it's just to see what terrain type was picked.
 
     factor_list = calc['factor_list']
@@ -223,6 +223,9 @@ def battle():
     while UNITS_TOTAL[0] > 0 and UNITS_TOTAL[1] > 0:
 
         battle_mult = battle_mult_update(terrain_type, battle_turn)
+        L_ARMY_PROPERTIES = UNITS_TOTAL[2]
+        D_ARMY_PROPERTIES = UNITS_TOTAL[3]
+
         IN_COUNT = IN_PARAM[6] #transfers all unit counts to a separate variable so loss calcs aren't dependant on who is first in the code.
         AR_COUNT = AR_PARAM[6]
         HI_COUNT = HI_PARAM[6]
@@ -236,27 +239,26 @@ def battle():
         TR_COUNT = TR_PARAM[6]
 
         if IN_PARAM[6] > 0:
-            IN_PARAM[6] = calc_losses(IN_PARAM, factorE, multiplier, lower, upper, STR_bonus, 'L', 'D', battle_mult[0], battle_mult[1], GO_COUNT)
+            IN_PARAM[6] = calc_losses(IN_PARAM, factorE, multiplier, lower, upper, STR_bonus, battle_mult[0], battle_mult[1], GO_COUNT, L_ARMY_PROPERTIES, D_ARMY_PROPERTIES)
         if AR_PARAM[6] > 0:
-            AR_PARAM[6] = calc_losses(AR_PARAM, factorE, multiplier, lower, upper, STR_bonus, 'L', 'D', battle_mult[0], battle_mult[1], OR_COUNT)
+            AR_PARAM[6] = calc_losses(AR_PARAM, factorE, multiplier, lower, upper, STR_bonus, battle_mult[0], battle_mult[1], OR_COUNT, L_ARMY_PROPERTIES, D_ARMY_PROPERTIES)
         if HI_PARAM[6] > 0:
-            HI_PARAM[6] = calc_losses(HI_PARAM, factorE, multiplier, lower, upper, STR_bonus, 'L', 'D', battle_mult[0], battle_mult[1], WO_COUNT)
+            HI_PARAM[6] = calc_losses(HI_PARAM, factorE, multiplier, lower, upper, STR_bonus, battle_mult[0], battle_mult[1], WO_COUNT, L_ARMY_PROPERTIES, D_ARMY_PROPERTIES)
         if CA_PARAM[6] > 0:
-            CA_PARAM[6] = calc_losses(CA_PARAM, factorE, multiplier, lower, upper, STR_bonus, 'L', 'D', battle_mult[0], battle_mult[1], OA_COUNT)
+            CA_PARAM[6] = calc_losses(CA_PARAM, factorE, multiplier, lower, upper, STR_bonus, battle_mult[0], battle_mult[1], OA_COUNT, L_ARMY_PROPERTIES, D_ARMY_PROPERTIES)
         if CP_PARAM[6] > 0:
-            CP_PARAM[6] = calc_losses(CP_PARAM, factorE, multiplier, lower, upper, STR_bonus, 'L', 'D', battle_mult[0], battle_mult[1], TR_COUNT)
+            CP_PARAM[6] = calc_losses(CP_PARAM, factorE, multiplier, lower, upper, STR_bonus, battle_mult[0], battle_mult[1], TR_COUNT, L_ARMY_PROPERTIES, D_ARMY_PROPERTIES)
 
         if GO_PARAM[6] > 0:
-            GO_PARAM[6] = calc_losses(GO_PARAM, factorE, multiplier, lower, upper, STR_bonus, 'D', 'L', battle_mult[0], battle_mult[1], HI_COUNT)
+            GO_PARAM[6] = calc_losses(GO_PARAM, factorE, multiplier, lower, upper, STR_bonus, battle_mult[0], battle_mult[1], HI_COUNT, D_ARMY_PROPERTIES, L_ARMY_PROPERTIES)
         if OA_PARAM[6] > 0:
-            OA_PARAM[6] = calc_losses(OA_PARAM, factorE, multiplier, lower, upper, STR_bonus, 'D', 'L', battle_mult[0], battle_mult[1], IN_COUNT)
+            OA_PARAM[6] = calc_losses(OA_PARAM, factorE, multiplier, lower, upper, STR_bonus, battle_mult[0], battle_mult[1], IN_COUNT, D_ARMY_PROPERTIES, L_ARMY_PROPERTIES)
         if OR_PARAM[6] > 0:
-            OR_PARAM[6] = calc_losses(OR_PARAM, factorE, multiplier, lower, upper, STR_bonus, 'D', 'L', battle_mult[0], battle_mult[1], CP_COUNT)
+            OR_PARAM[6] = calc_losses(OR_PARAM, factorE, multiplier, lower, upper, STR_bonus, battle_mult[0], battle_mult[1], CP_COUNT, D_ARMY_PROPERTIES, L_ARMY_PROPERTIES)
         if WO_PARAM[6] > 0:
-            WO_PARAM[6] = calc_losses(WO_PARAM, factorE, multiplier, lower, upper, STR_bonus, 'D', 'L', battle_mult[0], battle_mult[1], AR_COUNT)
+            WO_PARAM[6] = calc_losses(WO_PARAM, factorE, multiplier, lower, upper, STR_bonus, battle_mult[0], battle_mult[1], AR_COUNT, D_ARMY_PROPERTIES, L_ARMY_PROPERTIES)
         if TR_PARAM[6] > 0:
-            TR_PARAM[6] = calc_losses(TR_PARAM, factorE, multiplier, lower, upper, STR_bonus, 'D', 'L', battle_mult[0], battle_mult[1], CA_COUNT)
-
+            TR_PARAM[6] = calc_losses(TR_PARAM, factorE, multiplier, lower, upper, STR_bonus, battle_mult[0], battle_mult[1], CA_COUNT, D_ARMY_PROPERTIES, L_ARMY_PROPERTIES)
 
         UNITS_TOTAL = calc_army_update(factorC, factorD, battle_mult[0], battle_mult[1], IN_PARAM, AR_PARAM, HI_PARAM, CA_PARAM, CP_PARAM, GO_PARAM, OA_PARAM, OR_PARAM, WO_PARAM, TR_PARAM) #ADD ALL OTHER PARAM LISTS HERE AS UNITS ARE ADDED
         battle_turn += 1
@@ -307,15 +309,11 @@ def battle_mult_update(terrain_type, battle_turn): # ['none', 'fields', 'forests
     battle_mult = [battle_m_mult, battle_r_mult]
     return battle_mult
 
-#weaknesses are added with MS or RS of unit * count
-def calc_losses(unit_param, factorE, multiplier, lower, upper, STR_bonus, faction_unit, faction_other, BATTLE_M_MULT, BATTLE_R_MULT, weakness_count):
-
-    faction_unit_list = calc[faction_unit,'ARMY','PROPERTIES'] #[L_ARMY_MS, L_ARMY_MD, L_ARMY_RS, L_ARMY_RD, L_ARMY_MS_FACTOR, L_ARMY_RS_FACTOR]
-    faction_other_list = calc[faction_other,'ARMY','PROPERTIES'] #[D_ARMY_MS, D_ARMY_MD, D_ARMY_RS, D_ARMY_RD, D_ARMY_MS_FACTOR, D_ARMY_RS_FACTOR]
+def calc_losses(unit_param, factorE, multiplier, lower, upper, STR_bonus, BATTLE_M_MULT, BATTLE_R_MULT, weakness_count, faction_unit_list, faction_other_list):
 
     unit_update = (100 - (factorE ** ((((faction_other_list[0] - faction_unit_list[1] + (STR_bonus * BATTLE_M_MULT * (unit_param[7] * weakness_count)))/faction_unit_list[1]) * \
     random.randint(lower, upper) * faction_other_list[4])-unit_param[4]) + factorE ** ((((faction_other_list[2] - faction_unit_list[3] + (STR_bonus * BATTLE_R_MULT * (unit_param[8] * weakness_count))) \
-    / faction_unit_list[1]) * random.randint(lower, upper) * faction_other_list[5])-unit_param[5])) * multiplier) / 100 * unit_param[6] #where it has 1 * 0 + 1 * 0 add weaknesses for this unit. the first one is melee weakesses and the second set is range weaknesses
+    / faction_unit_list[3]) * random.randint(lower, upper) * faction_other_list[5])-unit_param[5])) * multiplier) / 100 * unit_param[6]
 
     if unit_update < 0:
         unit_update = 0
@@ -350,7 +348,10 @@ def calc_army_update(factorC, factorD, BATTLE_M_MULT, BATTLE_R_MULT, IN_PARAM, A
         L_ARMY_AVG_RS = L_ARMY_RS / L_UNITS_TOTAL
         L_ARMY_MS_FACTOR = factorC * L_ARMY_AVG_MS + factorD ** L_ARMY_AVG_MS
         L_ARMY_RS_FACTOR = factorC * L_ARMY_AVG_RS + factorD ** L_ARMY_AVG_RS
-        calc['L','ARMY','PROPERTIES'] = [L_ARMY_MS, L_ARMY_MD, L_ARMY_RS, L_ARMY_RD, L_ARMY_MS_FACTOR, L_ARMY_RS_FACTOR]
+        L_ARMY_PROPERTIES = [L_ARMY_MS, L_ARMY_MD, L_ARMY_RS, L_ARMY_RD, L_ARMY_MS_FACTOR, L_ARMY_RS_FACTOR]
+
+    if L_UNITS_TOTAL <= 0:
+        L_ARMY_PROPERTIES=[0,0,0,0,0,0]
 
     if D_UNITS_TOTAL > 0:
         #calculate updated D army totals
@@ -362,9 +363,12 @@ def calc_army_update(factorC, factorD, BATTLE_M_MULT, BATTLE_R_MULT, IN_PARAM, A
         D_ARMY_AVG_RS = D_ARMY_RS / D_UNITS_TOTAL
         D_ARMY_MS_FACTOR = factorC * D_ARMY_AVG_MS + factorD ** D_ARMY_AVG_MS
         D_ARMY_RS_FACTOR = factorC * D_ARMY_AVG_RS + factorD ** D_ARMY_AVG_RS
-        calc['D','ARMY','PROPERTIES'] = [D_ARMY_MS, D_ARMY_MD, D_ARMY_RS, D_ARMY_RD, D_ARMY_MS_FACTOR, D_ARMY_RS_FACTOR]
+        D_ARMY_PROPERTIES = [D_ARMY_MS, D_ARMY_MD, D_ARMY_RS, D_ARMY_RD, D_ARMY_MS_FACTOR, D_ARMY_RS_FACTOR]
 
-    UNITS_TOTAL = [L_UNITS_TOTAL, D_UNITS_TOTAL]
+    if D_UNITS_TOTAL <= 0:
+        D_ARMY_PROPERTIES=[0,0,0,0,0,0]
+
+    UNITS_TOTAL = [L_UNITS_TOTAL, D_UNITS_TOTAL, L_ARMY_PROPERTIES, D_ARMY_PROPERTIES]
 
     return UNITS_TOTAL
 
