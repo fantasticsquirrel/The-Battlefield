@@ -26,11 +26,6 @@ def seed():
     metadata['multiplier'] = decimal('10.0')
     metadata['STR_bonus'] = decimal('0.50')
 
-    metadata['PLACEHOLDER','MS'] = decimal('0.0')
-    metadata['PLACEHOLDER','MD'] = decimal('0.0')
-    metadata['PLACEHOLDER','RS'] = decimal('0.0')
-    metadata['PLACEHOLDER','RD'] = decimal('0.0')
-
     #LIGHT Unit Base Parameters
     metadata['IN_MS'] = decimal('2.0')
     metadata['IN_MD'] = decimal('1.0')
@@ -68,9 +63,9 @@ def seed():
     metadata['OA_RS'] = decimal('6.0')
     metadata['OA_RD'] = decimal('2.0')
 
-    metadata['OR_MS'] = decimal('2.0')
-    metadata['OR_MD'] = decimal('1.0')
-    metadata['OR_RS'] = decimal('6.0')
+    metadata['OR_MS'] = decimal('3.0')
+    metadata['OR_MD'] = decimal('2.0')
+    metadata['OR_RS'] = decimal('1.0')
     metadata['OR_RD'] = decimal('2.0')
 
     metadata['WO_MS'] = decimal('5.0')
@@ -282,12 +277,12 @@ def battle_mult_update(terrain_type, battle_turn): # ['none', 'fields', 'forests
         battle_r_mult = 1
 
     if terrain_type == 'fields':
-        battle_m_mult = battle_turn * 0.1 + 0.25
-        battle_r_mult = 1 - (battle_turn * 0.1)
+        battle_m_mult = battle_turn * 0.05 + 0.25
+        battle_r_mult = 1 - (battle_turn * 0.05)
 
     if terrain_type == 'forests':
-        battle_m_mult = 1 - (battle_turn * 0.1)
-        battle_r_mult = battle_turn * 0.1 + 0.25
+        battle_m_mult = 1 - (battle_turn * 0.05)
+        battle_r_mult = battle_turn * 0.05 + 0.25
 
     if terrain_type == 'hills':
         if (battle_turn % 2) == 0:
@@ -483,13 +478,6 @@ def stake_FORT(fort_amount: int, GO_FORT: int, OA_FORT: int, OR_FORT: int,  WO_F
     data['OR'] += OR_amount
     data['WO'] += WO_amount
     data['TR'] += TR_amount
-
-
-
-
-
-
-
 
 
 
