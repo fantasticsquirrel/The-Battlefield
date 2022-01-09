@@ -165,10 +165,11 @@ def update_units_factors():
     calc['factor_list'] = [metadata['factorC'], metadata['factorD'], metadata['factorE'], metadata['lower'], metadata['upper'], metadata['multiplier'], metadata['STR_bonus']]
 
 @export
-def battle():
+def battle(match_id: str):
 
-    total_cstl = data['total_cstl']
-    total_fort = data['total_fort']
+
+    total_cstl = data[match_id,'total_cstl']
+    total_fort = data[match_id,'total_fort']
     assert total_cstl == total_fort and total_cstl == metadata['CSTL_FORT_PER_BATTLE'], f'There are {total_cstl} CSTL and {total_fort} FORT staked. These must be equal and filled to max capacity for a battle to be initiated.'
     operator = metadata['operator']
     terrains = ['none', 'fields', 'forests', 'hills', 'chaotic']
@@ -196,18 +197,21 @@ def battle():
     WO_PARAM = calc['WO','PARAM']
     TR_PARAM = calc['TR','PARAM']
 
-    #battle setup
-    IN_PARAM[6] = data['IN'] #transfers all unit counts from staking tokens into the parameter list for use in the functions
-    AR_PARAM[6] = data['AR']
-    HI_PARAM[6] = data['HI']
-    CA_PARAM[6] = data['CA']
-    CP_PARAM[6] = data['CP']
+    L_units = data[match_id, 'L_units']
 
-    GO_PARAM[6] = data['GO']
-    OA_PARAM[6] = data['OA']
-    OR_PARAM[6] = data['OR']
-    WO_PARAM[6] = data['WO']
-    TR_PARAM[6] = data['TR']
+    IN_PARAM[6] = L_units['IN'] #transfers all unit counts from staking tokens into the parameter list for use in the functions
+    AR_PARAM[6] = L_units['AR']
+    HI_PARAM[6] = L_units['HI']
+    CA_PARAM[6] = L_units['CA']
+    CP_PARAM[6] = L_units['CP']
+
+    D_units = data[match_id, 'D_units']
+
+    GO_PARAM[6] = D_units['GO']
+    OA_PARAM[6] = D_units['OA']
+    OR_PARAM[6] = D_units['OR']
+    WO_PARAM[6] = D_units['WO']
+    TR_PARAM[6] = D_units['TR']
 
 
     battle_turn = 0
@@ -265,9 +269,9 @@ def battle():
     else:
         winner = 'error'
 
-    calc['Battle_Results'] = f'There are {IN_PARAM[6]} infantry, {AR_PARAM[6]} archers, {HI_PARAM[6]} heavy infantry, {CA_PARAM[6]} cavalry, {CP_PARAM[6]} catapults remaining in the LIGHT army, and there are {GO_PARAM[6]} goblins, {OA_PARAM[6]} orc archers, {OR_PARAM[6]} orcs, {WO_PARAM[6]} wolves, {TR_PARAM[6]} trolls remaining in the DARK army.'
+    calc['Battle_Results'] = f'There are {int(IN_PARAM[6])} infantry, {int(AR_PARAM[6])} archers, {int(HI_PARAM[6])} heavy infantry, {int(CA_PARAM[6])} cavalry, {int(CP_PARAM[6])} catapults remaining in the LIGHT army, and there are {int(GO_PARAM[6])} goblins, {int(OA_PARAM[6])} orc archers, {int(OR_PARAM[6])} orcs, {int(WO_PARAM[6])} wolves, {int(TR_PARAM[6])} trolls remaining in the DARK army.'
 
-    disperse(operator, winner)
+    disperse(operator, winner, match_id)
 
     data['total_turns'] = battle_turn #may not need long term. This is just to track the total turns a battle took.
 
@@ -367,14 +371,14 @@ def calc_army_update(factorC, factorD, BATTLE_M_MULT, BATTLE_R_MULT, IN_PARAM, A
 
     return UNITS_TOTAL
 
-def disperse(operator: str, winner: str):
+def disperse(operator, winner, match_id):
     #calculate winnings where winners get 1.09, loser gets 0.90 and house gets 0.01
 
     cstl = importlib.import_module(cstl_contract.get())
     fort = importlib.import_module(fort_contract.get())
 
-    cstl_staked_wallets = data['cstl_staked_wallets']
-    fort_staked_wallets = data['fort_staked_wallets']
+    cstl_staked_wallets = data[match_id, 'cstl_staked_wallets']
+    fort_staked_wallets = data[match_id, 'fort_staked_wallets']
     winner_percent = metadata['winner_percent']
     house_percent = metadata['house_percent']
     loser_percent = 1 - winner_percent - house_percent
@@ -398,32 +402,31 @@ def disperse(operator: str, winner: str):
         for key, value in dict(cstl_staked_wallets).items():
             cstl.transfer(amount= (value * loser_percent), to=key)
 
-    data['cstl_staked_wallets'] = {} #clears all staked wallets from storage so a new battle can start
-    data['fort_staked_wallets'] = {}
-    data['total_cstl'] = 0
-    data['total_fort'] = 0
+    data[match_id, 'cstl_staked_wallets'] = {} #clears all staked wallets from storage so a new battle can start
+    data[match_id, 'fort_staked_wallets'] = {}
+    data[match_id, 'total_cstl'] = 0
+    data[match_id, 'total_fort'] = 0
+    data[match_id, 'players'] = []
+    data[match_id, 'match_owner'] = None
 
-    data['IN'] = 0 #add all other units here as they're added
-    data['AR'] = 0
-    data['HI'] = 0
-    data['CA'] = 0
-    data['CP'] = 0
-
-    data['GO'] = 0
-    data['OA'] = 0
-    data['OR'] = 0
-    data['WO'] = 0
-    data['TR'] = 0
+    data[match_id, 'L_units'] = {}
+    data[match_id, 'D_units'] = {}
 
 @export
-def stake_CSTL(cstl_amount: int, IN_CSTL: int, AR_CSTL: int, HI_CSTL: int, CA_CSTL: int,  CP_CSTL: int):
+def stake_CSTL(match_id: str, cstl_amount: int, IN_CSTL: int=0, AR_CSTL: int=0, HI_CSTL: int=0, CA_CSTL: int=0,  CP_CSTL: int=0):
+
+#check to see if match is private. If public, don't check the list. If private, check to see if the player is on player list.
+    if data[match_id, 'private'] == 1:
+        playerlist = data[match_id, 'players']
+        assert ctx.caller in playerlist, 'You are not on the list of players for this match. Contact the match creator if you wish to join.'
 
     assert IN_CSTL + AR_CSTL + HI_CSTL + CA_CSTL + CP_CSTL == cstl_amount, "Total number of CSTL must equal the sum of the CSTL used to train each unit."
-    assert data['total_cstl'] + cstl_amount <= metadata['CSTL_FORT_PER_BATTLE'], f'You are attempting to stake {cstl_amount} which is more than the {metadata["CSTL_FORT_PER_BATTLE"] - data["total_cstl"]} remaining to be staked for this battle. Please try again with a smaller number.'
-#put error checking to see if a battle has been started.
-    staked_wallets = data['cstl_staked_wallets']
+    assert data[match_id, 'total_cstl'] + cstl_amount <= metadata['CSTL_FORT_PER_BATTLE'], f'You are attempting to stake {cstl_amount} which is more than the {metadata["CSTL_FORT_PER_BATTLE"] - data["total_cstl"]} remaining to be staked for this battle. Please try again with a smaller number.'
+
+    staked_wallets = data[match_id, 'cstl_staked_wallets']
     cstl = importlib.import_module(cstl_contract.get())
     UNITS_PER_CSTL = metadata['UNITS_PER_CSTL']
+    L_units = data[match_id, 'L_units']
 
     IN_amount = UNITS_PER_CSTL["IN"] * IN_CSTL
     AR_amount = UNITS_PER_CSTL["AR"] * AR_CSTL
@@ -438,24 +441,32 @@ def stake_CSTL(cstl_amount: int, IN_CSTL: int, AR_CSTL: int, HI_CSTL: int, CA_CS
     else:
         staked_wallets[ctx.caller] += cstl_amount
 
-    data['cstl_staked_wallets'] = staked_wallets #adds the staker to the dict for calculating rewards for winners and losers
-    data['total_cstl'] += cstl_amount #adds total CSTL to storage for calculating rewards
+    data[match_id, 'cstl_staked_wallets'] = staked_wallets #adds the staker to the dict for calculating rewards for winners and losers
+    data[match_id, 'total_cstl'] += cstl_amount #adds total CSTL to storage for calculating rewards
 
-    data['IN'] += IN_amount
-    data['AR'] += AR_amount
-    data['HI'] += HI_amount
-    data['CA'] += CA_amount
-    data['CP'] += CP_amount
+    L_units['IN'] += IN_amount
+    L_units['AR'] += AR_amount
+    L_units['HI'] += HI_amount
+    L_units['CA'] += CA_amount
+    L_units['CP'] += CP_amount
+
+    data[match_id, 'L_units'] = L_units
 
 @export
-def stake_FORT(fort_amount: int, GO_FORT: int, OA_FORT: int, OR_FORT: int,  WO_FORT: int, TR_FORT: int):
+def stake_FORT(match_id: str, fort_amount: int, GO_FORT: int=0, OA_FORT: int=0, OR_FORT: int=0,  WO_FORT: int=0, TR_FORT: int=0):
+
+#check to see if match is private. If public, don't check the list. If private, check to see if the player is on player list.
+    if data[match_id, 'private'] == 1:
+        playerlist = data[match_id, 'players']
+        assert ctx.caller in playerlist, 'You are not on the list of players for this match. Contact the match creator if you wish to join.'
 
     assert GO_FORT + OA_FORT + OR_FORT + WO_FORT + TR_FORT == fort_amount, "Total number of FORT must equal the sum of the FORT used to train each unit."
     assert data['total_fort'] + fort_amount <= metadata['CSTL_FORT_PER_BATTLE'], f'You are attempting to stake {fort_amount} which is more than the {metadata["CSTL_FORT_PER_BATTLE"] - data["total_fort"]} remaining to be staked for this battle. Please try again with a smaller number.'
-#put error checking to see if a battle has been started.
-    staked_wallets = data['fort_staked_wallets']
+
+    staked_wallets = data[match_id, 'fort_staked_wallets']
     fort = importlib.import_module(fort_contract.get())
     UNITS_PER_FORT = metadata['UNITS_PER_FORT']
+    D_units = data[match_id, 'D_units']
 
     GO_amount = UNITS_PER_FORT["GO"] * GO_FORT
     OA_amount = UNITS_PER_FORT["OA"] * OA_FORT
@@ -470,14 +481,58 @@ def stake_FORT(fort_amount: int, GO_FORT: int, OA_FORT: int, OR_FORT: int,  WO_F
     else:
         staked_wallets[ctx.caller] += fort_amount
 
-    data['fort_staked_wallets'] = staked_wallets #adds the staker to the dict for calculating rewards for winners and losers
-    data['total_fort'] += fort_amount #adds total FORT to storage for calculating rewards
+    data[match_id, 'fort_staked_wallets'] = staked_wallets #adds the staker to the dict for calculating rewards for winners and losers
+    data[match_id, 'total_fort'] += fort_amount #adds total FORT to storage for calculating rewards
 
-    data['GO'] += GO_amount
-    data['OA'] += OA_amount
-    data['OR'] += OR_amount
-    data['WO'] += WO_amount
-    data['TR'] += TR_amount
+    D_units['GO'] += GO_amount
+    D_units['OA'] += OA_amount
+    D_units['OR'] += OR_amount
+    D_units['WO'] += WO_amount
+    D_units['TR'] += TR_amount
+
+    data[match_id, 'D_units'] = D_units
+
+@export
+def new_match(match_id : str, private : bool):
+
+    assert bool(data[match_id, 'match_owner']) == False, "This match has already been created, please create one with a different name."
+
+    data[match_id, 'match_owner'] = ctx.caller
+    data[match_id, 'private'] = private
+    data[match_id, 'players'] = [ctx.caller]
+
+    data[match_id, 'cstl_staked_wallets'] = {}
+    data[match_id, 'fort_staked_wallets'] = {}
+
+    data[match_id, 'L_units'] = {
+        "IN": 0,
+        "AR": 0,
+        "HI": 0,
+        "CA": 0,
+        "CP": 0
+    }
+
+    data[match_id, 'D_units'] = {
+        "GO": 0,
+        "OA": 0,
+        "OR": 0,
+        "WO": 0,
+        "TR": 0
+    }
+
+@export
+def add_players(match_id : str, add1: str='', add2: str='', add3: str='', add4: str=''):
+
+    assert data[match_id, 'match_owner'] == ctx.caller, 'You are not the match creator and cannot add players to this match.'
+    assert data[match_id, 'private'] == True, 'This is a public game and individual players cannot be added.'
+
+    addlist = [add1, add2, add3, add4]
+    playerlist = data[match_id, 'players']
+
+    for x in addlist:
+        playerlist.append(x)
+
+    data[match_id, 'players'] = playerlist
 
 
 
