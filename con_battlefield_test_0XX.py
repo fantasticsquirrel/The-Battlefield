@@ -23,7 +23,7 @@ def seed():
     metadata['factorE'] = decimal('1.005')
     metadata['lower'] = decimal('100.0')
     metadata['upper'] = decimal('100.0')
-    metadata['multiplier'] = decimal('10.0')
+    metadata['multiplier'] = decimal('5.0')
     metadata['STR_bonus'] = decimal('0.50')
 
     #LIGHT Unit Base Parameters
@@ -167,14 +167,19 @@ def update_units_factors():
 @export
 def battle(match_id: str):
 
+    if data[match_id, 'private'] == 1:
+        playerlist = data[match_id, 'players']
+        assert ctx.caller in playerlist, 'You are not on the list of players for this match and cannot start the battle. Contact the match creator if you wish to join.'
 
     total_cstl = data[match_id,'total_cstl']
     total_fort = data[match_id,'total_fort']
     assert total_cstl == total_fort and total_cstl == metadata['CSTL_FORT_PER_BATTLE'], f'There are {total_cstl} CSTL and {total_fort} FORT staked. These must be equal and filled to max capacity for a battle to be initiated.'
     operator = metadata['operator']
-    terrains = ['none', 'fields', 'forests', 'hills', 'chaotic']
-    terrain_type = metadata['terrain_type'] #terrains[random.randint(0, 3)] for random terrain
-    data['terrain_type'] = metadata['terrain_type'] #not needed long term since it's just to see what terrain type was picked.
+    terrains = ['random','none', 'fields', 'forests', 'hills', 'chaotic']
+    if data[match_id, 'terrain'] == 0 :
+        terrain_type = terrains[random.randint(1, 5)]
+    else:
+        terrain_type = terrains[data[match_id, 'terrain']]
 
     factor_list = calc['factor_list']
     factorC = factor_list[0]
@@ -282,19 +287,19 @@ def battle_mult_update(terrain_type, battle_turn): # ['none', 'fields', 'forests
 
     if terrain_type == 'fields':
         battle_m_mult = battle_turn * 0.05 + 0.25
-        battle_r_mult = 1 - (battle_turn * 0.05)
+        battle_r_mult = 1 - (battle_turn * 0.04)
 
     if terrain_type == 'forests':
-        battle_m_mult = 1 - (battle_turn * 0.05)
+        battle_m_mult = 1 - (battle_turn * 0.04)
         battle_r_mult = battle_turn * 0.05 + 0.25
 
     if terrain_type == 'hills':
         if (battle_turn % 2) == 0:
-            battle_m_mult = 0.75 - (battle_turn * 0.1)
-            battle_r_mult = 0.75 + (battle_turn * 0.1)
+            battle_m_mult = 0.75 - (battle_turn * 0.05)
+            battle_r_mult = 0.75 + (battle_turn * 0.05)
         else:
-            battle_m_mult = 0.75 + (battle_turn * 0.1)
-            battle_r_mult = 0.75 - (battle_turn * 0.1)
+            battle_m_mult = 0.75 + (battle_turn * 0.05)
+            battle_r_mult = 0.75 - (battle_turn * 0.05)
 
     if terrain_type == 'chaotic':
         battle_m_mult = random.randint(0, 100) * 0.01
@@ -408,20 +413,20 @@ def disperse(operator, winner, match_id):
     data[match_id, 'total_fort'] = 0
     data[match_id, 'players'] = []
     data[match_id, 'match_owner'] = None
+    data[match_id, 'terrain'] = None
 
     data[match_id, 'L_units'] = {}
     data[match_id, 'D_units'] = {}
 
 @export
-def stake_CSTL(match_id: str, cstl_amount: int, IN_CSTL: int=0, AR_CSTL: int=0, HI_CSTL: int=0, CA_CSTL: int=0,  CP_CSTL: int=0):
+def stake_CSTL(match_id: str, IN_CSTL: int=0, AR_CSTL: int=0, HI_CSTL: int=0, CA_CSTL: int=0,  CP_CSTL: int=0):
 
 #check to see if match is private. If public, don't check the list. If private, check to see if the player is on player list.
     if data[match_id, 'private'] == 1:
         playerlist = data[match_id, 'players']
         assert ctx.caller in playerlist, 'You are not on the list of players for this match. Contact the match creator if you wish to join.'
-
-    assert IN_CSTL + AR_CSTL + HI_CSTL + CA_CSTL + CP_CSTL == cstl_amount, "Total number of CSTL must equal the sum of the CSTL used to train each unit."
-    assert data[match_id, 'total_cstl'] + cstl_amount <= metadata['CSTL_FORT_PER_BATTLE'], f'You are attempting to stake {cstl_amount} which is more than the {metadata["CSTL_FORT_PER_BATTLE"] - data["total_cstl"]} remaining to be staked for this battle. Please try again with a smaller number.'
+    cstl_amount = IN_CSTL + AR_CSTL + HI_CSTL + CA_CSTL + CP_CSTL
+    assert data[match_id, 'total_cstl'] + cstl_amount <= metadata['CSTL_FORT_PER_BATTLE'], f'You are attempting to stake {cstl_amount} which is more than the {metadata["CSTL_FORT_PER_BATTLE"] - data[match_id, 'total_cstl']} remaining to be staked for this battle. Please try again with a smaller number.'
 
     staked_wallets = data[match_id, 'cstl_staked_wallets']
     cstl = importlib.import_module(cstl_contract.get())
@@ -453,15 +458,14 @@ def stake_CSTL(match_id: str, cstl_amount: int, IN_CSTL: int=0, AR_CSTL: int=0, 
     data[match_id, 'L_units'] = L_units
 
 @export
-def stake_FORT(match_id: str, fort_amount: int, GO_FORT: int=0, OA_FORT: int=0, OR_FORT: int=0,  WO_FORT: int=0, TR_FORT: int=0):
+def stake_FORT(match_id: str, GO_FORT: int=0, OA_FORT: int=0, OR_FORT: int=0,  WO_FORT: int=0, TR_FORT: int=0):
 
 #check to see if match is private. If public, don't check the list. If private, check to see if the player is on player list.
     if data[match_id, 'private'] == 1:
         playerlist = data[match_id, 'players']
         assert ctx.caller in playerlist, 'You are not on the list of players for this match. Contact the match creator if you wish to join.'
-
-    assert GO_FORT + OA_FORT + OR_FORT + WO_FORT + TR_FORT == fort_amount, "Total number of FORT must equal the sum of the FORT used to train each unit."
-    assert data['total_fort'] + fort_amount <= metadata['CSTL_FORT_PER_BATTLE'], f'You are attempting to stake {fort_amount} which is more than the {metadata["CSTL_FORT_PER_BATTLE"] - data["total_fort"]} remaining to be staked for this battle. Please try again with a smaller number.'
+    fort_amount = GO_FORT + OA_FORT + OR_FORT + WO_FORT + TR_FORT
+    assert data['total_fort'] + fort_amount <= metadata['CSTL_FORT_PER_BATTLE'], f'You are attempting to stake {fort_amount} which is more than the {metadata["CSTL_FORT_PER_BATTLE"] - data[match_id, 'total_fort']} remaining to be staked for this battle. Please try again with a smaller number.'
 
     staked_wallets = data[match_id, 'fort_staked_wallets']
     fort = importlib.import_module(fort_contract.get())
@@ -493,13 +497,14 @@ def stake_FORT(match_id: str, fort_amount: int, GO_FORT: int=0, OA_FORT: int=0, 
     data[match_id, 'D_units'] = D_units
 
 @export
-def new_match(match_id : str, private : bool):
+def new_match(match_id : str, terrain: int, private : bool):
 
     assert bool(data[match_id, 'match_owner']) == False, "This match has already been created, please create one with a different name."
 
     data[match_id, 'match_owner'] = ctx.caller
     data[match_id, 'private'] = private
     data[match_id, 'players'] = [ctx.caller]
+    data[match_id, 'terrain'] = terrain
 
     data[match_id, 'cstl_staked_wallets'] = {}
     data[match_id, 'fort_staked_wallets'] = {}
@@ -533,6 +538,37 @@ def add_players(match_id : str, add1: str='', add2: str='', add3: str='', add4: 
         playerlist.append(x)
 
     data[match_id, 'players'] = playerlist
+
+@export
+def cancel_match(match_id : str):
+
+    assert data[match_id, 'match_owner'] == ctx.caller, 'You are not the match creator and cannot cancel this match.'
+    tokens = metadata['CSTL_FORT_PER_BATTLE']
+    assert tokens > (data[match_id, 'total_cstl'] + data[match_id, 'total_fort']), 'The match is over half full and can no longer be cancelled.'
+
+    cstl = importlib.import_module(cstl_contract.get())
+    fort = importlib.import_module(fort_contract.get())
+
+    cstl_staked_wallets = data[match_id, 'cstl_staked_wallets']
+    fort_staked_wallets = data[match_id, 'fort_staked_wallets']
+
+
+    for key, value in dict(cstl_staked_wallets).items():
+        cstl.transfer(amount=value, to=key)
+
+    for key, value in dict(fort_staked_wallets).items():
+        fort.transfer(amount=value, to=key)
+
+    data[match_id, 'cstl_staked_wallets'] = {} #clears all staked wallets from storage so a new battle can start
+    data[match_id, 'fort_staked_wallets'] = {}
+    data[match_id, 'total_cstl'] = 0
+    data[match_id, 'total_fort'] = 0
+    data[match_id, 'players'] = []
+    data[match_id, 'match_owner'] = None
+    data[match_id, 'terrain'] = None
+
+    data[match_id, 'L_units'] = {}
+    data[match_id, 'D_units'] = {}
 
 
 
