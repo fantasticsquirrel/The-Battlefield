@@ -98,10 +98,9 @@ def seed():
 
     cstl_contract.set('con_castle')
     fort_contract.set('con_fortress')
-    data['cstl_staked_wallets'] = {}
-    data['fort_staked_wallets'] = {}
-    metadata['CSTL_FORT_PER_BATTLE'] = 100
-    metadata['terrain_type'] = 'none' #may not need this here long term.
+
+    calc['Castle Wins'] = 0
+    calc['Fortress Wins'] = 0
 
 @export
 def change_metadata(key: str, new_value: str, convert_to_decimal: bool=False):
@@ -173,7 +172,7 @@ def battle(match_id: str):
 
     total_cstl = data[match_id,'total_cstl']
     total_fort = data[match_id,'total_fort']
-    assert total_cstl == total_fort and total_cstl == metadata['CSTL_FORT_PER_BATTLE'], f'There are {total_cstl} CSTL and {total_fort} FORT staked. These must be equal and filled to max capacity for a battle to be initiated.'
+    assert total_cstl == total_fort and total_cstl == data[match_id, 'battle_size'], f'There are {total_cstl} CSTL and {total_fort} FORT staked. These must be equal and filled to max capacity for a battle to be initiated.'
     operator = metadata['operator']
     terrains = ['random','none', 'fields', 'forests', 'hills', 'chaotic']
     if data[match_id, 'terrain'] == 0 :
@@ -268,9 +267,11 @@ def battle(match_id: str):
         battle_turn += 1
 
     if UNITS_TOTAL[0] > 0 and UNITS_TOTAL[1] <= 0:
-        winner = 'L'
+        winner = 'Castle'
+        calc['Castle Wins'] += 1
     elif UNITS_TOTAL[1] > 0 and UNITS_TOTAL[0] <= 0:
-        winner = 'D'
+        winner = 'Fortress'
+        calc['Fortress Wins'] += 1
     else:
         winner = 'error'
 
@@ -381,14 +382,13 @@ def disperse(operator, winner, match_id):
 
     cstl = importlib.import_module(cstl_contract.get())
     fort = importlib.import_module(fort_contract.get())
-
     cstl_staked_wallets = data[match_id, 'cstl_staked_wallets']
     fort_staked_wallets = data[match_id, 'fort_staked_wallets']
     winner_percent = metadata['winner_percent']
     house_percent = metadata['house_percent']
     loser_percent = 1 - winner_percent - house_percent
 
-    if winner == 'L':
+    if winner == 'Castle':
         #send winnings to CASTLE stakers
         for key, value in dict(cstl_staked_wallets).items():
             cstl.transfer(amount=value, to=key)
@@ -397,7 +397,7 @@ def disperse(operator, winner, match_id):
 
         for key, value in dict(fort_staked_wallets).items():
             fort.transfer(amount= (value * loser_percent), to=key)
-    if winner == 'D':
+    if winner == 'Fortress':
         #send winnings to FORTRESS stakers
         for key, value in dict(fort_staked_wallets).items():
             fort.transfer(amount=value, to=key)
@@ -426,7 +426,8 @@ def stake_CSTL(match_id: str, IN_CSTL: int=0, AR_CSTL: int=0, HI_CSTL: int=0, CA
         playerlist = data[match_id, 'players']
         assert ctx.caller in playerlist, 'You are not on the list of players for this match. Contact the match creator if you wish to join.'
     cstl_amount = IN_CSTL + AR_CSTL + HI_CSTL + CA_CSTL + CP_CSTL
-    assert data[match_id, 'total_cstl'] + cstl_amount <= metadata['CSTL_FORT_PER_BATTLE'], f'You are attempting to stake {cstl_amount} which is more than the {metadata["CSTL_FORT_PER_BATTLE"] - data[match_id, 'total_cstl']} remaining to be staked for this battle. Please try again with a smaller number.'
+    assert cstl_amount <= data[match_id, 'max_stake_per'], f"You can only stake up to {data[match_id, 'max_stake_per']} tokens per transaction. Stake less and try again."
+    assert data[match_id, 'total_cstl'] + cstl_amount <= data[match_id, 'battle_size'], f"You are attempting to stake {cstl_amount} which is more than the {data[match_id, 'battle_size'] - data[match_id, 'total_cstl']} remaining to be staked for this battle. Please try again with a smaller number."
 
     staked_wallets = data[match_id, 'cstl_staked_wallets']
     cstl = importlib.import_module(cstl_contract.get())
@@ -465,7 +466,8 @@ def stake_FORT(match_id: str, GO_FORT: int=0, OA_FORT: int=0, OR_FORT: int=0,  W
         playerlist = data[match_id, 'players']
         assert ctx.caller in playerlist, 'You are not on the list of players for this match. Contact the match creator if you wish to join.'
     fort_amount = GO_FORT + OA_FORT + OR_FORT + WO_FORT + TR_FORT
-    assert data['total_fort'] + fort_amount <= metadata['CSTL_FORT_PER_BATTLE'], f'You are attempting to stake {fort_amount} which is more than the {metadata["CSTL_FORT_PER_BATTLE"] - data[match_id, 'total_fort']} remaining to be staked for this battle. Please try again with a smaller number.'
+    assert fort_amount <= data[match_id, 'max_stake_per'], f"You can only stake up to {data[match_id, 'max_stake_per']} tokens per transaction. Stake less and try again."
+    assert data[match_id, 'total_fort'] + fort_amount <= data[match_id, 'battle_size'], f"You are attempting to stake {fort_amount} which is more than the {data[match_id, 'battle_size'] - data[match_id, 'total_fort']} remaining to be staked for this battle. Please try again with a smaller number."
 
     staked_wallets = data[match_id, 'fort_staked_wallets']
     fort = importlib.import_module(fort_contract.get())
@@ -497,7 +499,7 @@ def stake_FORT(match_id: str, GO_FORT: int=0, OA_FORT: int=0, OR_FORT: int=0,  W
     data[match_id, 'D_units'] = D_units
 
 @export
-def new_match(match_id : str, terrain: int, private : bool):
+def new_match(match_id : str, terrain: int, private : bool, battle_size : int = 500, max_stake_per_transaction : int = 500):
 
     assert bool(data[match_id, 'match_owner']) == False, "This match has already been created, please create one with a different name."
 
@@ -505,9 +507,11 @@ def new_match(match_id : str, terrain: int, private : bool):
     data[match_id, 'private'] = private
     data[match_id, 'players'] = [ctx.caller]
     data[match_id, 'terrain'] = terrain
-
+    data[match_id, 'max_stake_per'] = max_stake_per_transaction
+    data[match_id, 'battle_size'] = battle_size
     data[match_id, 'cstl_staked_wallets'] = {}
     data[match_id, 'fort_staked_wallets'] = {}
+
 
     data[match_id, 'L_units'] = {
         "IN": 0,
@@ -543,7 +547,7 @@ def add_players(match_id : str, add1: str='', add2: str='', add3: str='', add4: 
 def cancel_match(match_id : str):
 
     assert data[match_id, 'match_owner'] == ctx.caller, 'You are not the match creator and cannot cancel this match.'
-    tokens = metadata['CSTL_FORT_PER_BATTLE']
+    tokens = data[match_id, 'battle_size']
     assert tokens > (data[match_id, 'total_cstl'] + data[match_id, 'total_fort']), 'The match is over half full and can no longer be cancelled.'
 
     cstl = importlib.import_module(cstl_contract.get())
@@ -570,6 +574,11 @@ def cancel_match(match_id : str):
     data[match_id, 'L_units'] = {}
     data[match_id, 'D_units'] = {}
 
+@export
+def reset_stats():
+    assert ctx.caller == metadata['operator'], "Only the operator can reset statistics."
+    calc['Castle Wins'] = 0
+    calc['Fortress Wins'] = 0
 
 
 
