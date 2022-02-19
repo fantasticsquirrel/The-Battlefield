@@ -96,11 +96,13 @@ def seed():
         "TR": 20
     }
 
-    cstl_contract.set('con_castle')
-    fort_contract.set('con_fortress')
+    cstl_contract.set('con_silver_credits')
+    fort_contract.set('con_silver_credits')
 
     calc['Castle Wins'] = 0
     calc['Fortress Wins'] = 0
+
+    metadata['terrains'] = ['random','none', 'fields', 'forests', 'hills', 'chaotic']
 
 @export
 def change_metadata(key: str, new_value: str, convert_to_decimal: bool=False):
@@ -114,54 +116,90 @@ def update_units_factors():
 
     factorA = metadata['factorA']
     factorB = metadata['factorB']
+    IN_MS = metadata['IN_MS']
+    IN_MD = metadata['IN_MD']
+    IN_RS = metadata['IN_RS']
+    IN_RD = metadata['IN_RD']
+    AR_MS = metadata['AR_MS']
+    AR_MD = metadata['AR_MD']
+    AR_RS = metadata['AR_RS']
+    AR_RD = metadata['AR_RD']
+    HI_MS = metadata['HI_MS']
+    HI_MD = metadata['HI_MD']
+    HI_RS = metadata['HI_RS']
+    HI_RD = metadata['HI_RD']
+    CA_MS = metadata['CA_MS']
+    CA_MD = metadata['CA_MD']
+    CA_RS = metadata['CA_RS']
+    CA_RD = metadata['CA_RD']
+    CP_MS = metadata['CP_MS']
+    CP_MD = metadata['CP_MD']
+    CP_RS = metadata['CP_RS']
+    CP_RD = metadata['CP_RD']
+
+    GO_MS = metadata['GO_MS']
+    GO_MD = metadata['GO_MD']
+    GO_RS = metadata['GO_RS']
+    GO_RD = metadata['GO_RD']
+    OA_MS = metadata['OA_MS']
+    OA_MD = metadata['OA_MD']
+    OA_RS = metadata['OA_RS']
+    OA_RD = metadata['OA_RD']
+    OR_MS = metadata['OR_MS']
+    OR_MD = metadata['OR_MD']
+    OR_RS = metadata['OR_RS']
+    OR_RD = metadata['OR_RD']
+    WO_MS = metadata['WO_MS']
+    WO_MD = metadata['WO_MD']
+    WO_RS = metadata['WO_RS']
+    WO_RD = metadata['WO_RD']
+    TR_MS = metadata['TR_MS']
+    TR_MD = metadata['TR_MD']
+    TR_RS = metadata['TR_RS']
+    TR_RD = metadata['TR_RD']
 
     #LIGHT Unit Parameter factors
-    IN_MDF = factorA * metadata['IN_MD'] + (factorB * metadata['IN_MD']) ** 3
-    IN_RDF = factorA * metadata['IN_RD'] + (factorB * metadata['IN_RD']) ** 3
-    #IN_WEAKNESS_1 =
-    AR_MDF = factorA * metadata['AR_MD'] + (factorB * metadata['AR_MD']) ** 3
-    AR_RDF = factorA * metadata['AR_RD'] + (factorB * metadata['AR_RD']) ** 3
+    IN_MDF = defense_factor(factorA, factorB, IN_MD)
+    IN_RDF = defense_factor(factorA, factorB, IN_RD)
+    AR_MDF = defense_factor(factorA, factorB, AR_MD)
+    AR_RDF = defense_factor(factorA, factorB, AR_RD)
+    HI_MDF = defense_factor(factorA, factorB, HI_MD)
+    HI_RDF = defense_factor(factorA, factorB, HI_RD)
+    CA_MDF = defense_factor(factorA, factorB, CA_MD)
+    CA_RDF = defense_factor(factorA, factorB, CA_RD)
+    CP_MDF = defense_factor(factorA, factorB, CP_MD)
+    CP_RDF = defense_factor(factorA, factorB, CP_RD)
 
-    HI_MDF = factorA * metadata['HI_MD'] + (factorB * metadata['HI_MD']) ** 3
-    HI_RDF = factorA * metadata['HI_RD'] + (factorB * metadata['HI_RD']) ** 3
-
-    CA_MDF = factorA * metadata['CA_MD'] + (factorB * metadata['CA_MD']) ** 3
-    CA_RDF = factorA * metadata['CA_RD'] + (factorB * metadata['CA_RD']) ** 3
-
-    CP_MDF = factorA * metadata['CP_MD'] + (factorB * metadata['CP_MD']) ** 3
-    CP_RDF = factorA * metadata['CP_RD'] + (factorB * metadata['CP_RD']) ** 3
-
-    calc['IN','PARAM'] = [metadata['IN_MS'], metadata['IN_MD'], metadata['IN_RS'], metadata['IN_RD'], IN_MDF, IN_RDF, 0.0, metadata['GO_MS'], metadata['GO_RS']] #ADD STRENGTHS AND WEAKNESSES TO UNIT PARAMS
-    calc['AR','PARAM'] = [metadata['AR_MS'], metadata['AR_MD'], metadata['AR_RS'], metadata['AR_RD'], AR_MDF, AR_RDF, 0.0, metadata['OR_MS'], metadata['OR_RS']] #ADD STRENGTHS AND WEAKNESSES TO UNIT PARAMS
-    calc['HI','PARAM'] = [metadata['HI_MS'], metadata['HI_MD'], metadata['HI_RS'], metadata['HI_RD'], HI_MDF, HI_RDF, 0.0, metadata['WO_MS'], metadata['WO_RS']] #ADD STRENGTHS AND WEAKNESSES TO UNIT PARAMS
-    calc['CA','PARAM'] = [metadata['CA_MS'], metadata['CA_MD'], metadata['CA_RS'], metadata['CA_RD'], CA_MDF, CA_RDF, 0.0, metadata['OA_MS'], metadata['OA_RS']] #ADD STRENGTHS AND WEAKNESSES TO UNIT PARAMS
-    calc['CP','PARAM'] = [metadata['CP_MS'], metadata['CP_MD'], metadata['CP_RS'], metadata['CP_RD'], CP_MDF, CP_RDF, 0.0, metadata['TR_MS'], metadata['TR_RS']] #ADD STRENGTHS AND WEAKNESSES TO UNIT PARAMS
+    calc['IN','PARAM'] = [IN_MS, IN_MD, IN_RS, IN_RD, IN_MDF, IN_RDF, 0.0, GO_MS, GO_RS] #ADD STRENGTHS AND WEAKNESSES TO UNIT PARAMS
+    calc['AR','PARAM'] = [AR_MS, AR_MD, AR_RS, AR_RD, AR_MDF, AR_RDF, 0.0, OR_MS, OR_RS] #ADD STRENGTHS AND WEAKNESSES TO UNIT PARAMS
+    calc['HI','PARAM'] = [HI_MS, HI_MD, HI_RS, HI_RD, HI_MDF, HI_RDF, 0.0, WO_MS, WO_RS] #ADD STRENGTHS AND WEAKNESSES TO UNIT PARAMS
+    calc['CA','PARAM'] = [CA_MS, CA_MD, CA_RS, CA_RD, CA_MDF, CA_RDF, 0.0, OA_MS, OA_RS] #ADD STRENGTHS AND WEAKNESSES TO UNIT PARAMS
+    calc['CP','PARAM'] = [CP_MS, CP_MD, CP_RS, CP_RD, CP_MDF, CP_RDF, 0.0, TR_MS, TR_RS] #ADD STRENGTHS AND WEAKNESSES TO UNIT PARAMS
 
     #DARK Unit Parameter factors
-    GO_MDF = factorA * metadata['GO_MD'] + (factorB * metadata['GO_MD']) ** 3
-    GO_RDF = factorA * metadata['GO_RD'] + (factorB * metadata['GO_RD']) ** 3
+    GO_MDF = defense_factor(factorA, factorB, GO_MD)
+    GO_RDF = defense_factor(factorA, factorB, GO_RD)
+    OA_MDF = defense_factor(factorA, factorB, OA_MD)
+    OA_RDF = defense_factor(factorA, factorB, OA_RD)
+    OR_MDF = defense_factor(factorA, factorB, OR_MD)
+    OR_RDF = defense_factor(factorA, factorB, OR_RD)
+    WO_MDF = defense_factor(factorA, factorB, WO_MD)
+    WO_RDF = defense_factor(factorA, factorB, WO_RD)
+    TR_MDF = defense_factor(factorA, factorB, TR_MD)
+    TR_RDF = defense_factor(factorA, factorB, TR_RD)
 
-    OA_MDF = factorA * metadata['OA_MD'] + (factorB * metadata['OA_MD']) ** 3
-    OA_RDF = factorA * metadata['OA_RD'] + (factorB * metadata['OA_RD']) ** 3
-
-    OR_MDF = factorA * metadata['OR_MD'] + (factorB * metadata['OR_MD']) ** 3
-    OR_RDF = factorA * metadata['OR_RD'] + (factorB * metadata['OR_RD']) ** 3
-
-    WO_MDF = factorA * metadata['WO_MD'] + (factorB * metadata['WO_MD']) ** 3
-    WO_RDF = factorA * metadata['WO_RD'] + (factorB * metadata['WO_RD']) ** 3
-
-    TR_MDF = factorA * metadata['TR_MD'] + (factorB * metadata['TR_MD']) ** 3
-    TR_RDF = factorA * metadata['TR_RD'] + (factorB * metadata['TR_RD']) ** 3
-
-    calc['GO','PARAM'] = [metadata['GO_MS'], metadata['GO_MD'], metadata['GO_RS'], metadata['GO_RD'], GO_MDF, GO_RDF, 0.0, metadata['HI_MS'], metadata['HI_RS']]
-    calc['OA','PARAM'] = [metadata['OA_MS'], metadata['OA_MD'], metadata['OA_RS'], metadata['OA_RD'], OA_MDF, OA_RDF, 0.0, metadata['IN_MS'], metadata['IN_RS']]
-    calc['OR','PARAM'] = [metadata['OR_MS'], metadata['OR_MD'], metadata['OR_RS'], metadata['OR_RD'], OR_MDF, OR_RDF, 0.0, metadata['CP_MS'], metadata['CP_RS']]
-    calc['WO','PARAM'] = [metadata['WO_MS'], metadata['WO_MD'], metadata['WO_RS'], metadata['WO_RD'], WO_MDF, WO_RDF, 0.0, metadata['AR_MS'], metadata['AR_RS']]
-    calc['TR','PARAM'] = [metadata['TR_MS'], metadata['TR_MD'], metadata['TR_RS'], metadata['TR_RD'], TR_MDF, TR_RDF, 0.0, metadata['CA_MS'], metadata['CA_RS']]
-
+    calc['GO','PARAM'] = [GO_MS, GO_MD, GO_RS, GO_RD, GO_MDF, GO_RDF, 0.0, HI_MS, HI_RS]
+    calc['OA','PARAM'] = [OA_MS, OA_MD, OA_RS, OA_RD, OA_MDF, OA_RDF, 0.0, IN_MS, IN_RS]
+    calc['OR','PARAM'] = [OR_MS, OR_MD, OR_RS, OR_RD, OR_MDF, OR_RDF, 0.0, CP_MS, CP_RS]
+    calc['WO','PARAM'] = [WO_MS, WO_MD, WO_RS, WO_RD, WO_MDF, WO_RDF, 0.0, AR_MS, AR_RS]
+    calc['TR','PARAM'] = [TR_MS, TR_MD, TR_RS, TR_RD, TR_MDF, TR_RDF, 0.0, CA_MS, CA_RS]
 
     #update calc list from metadata parameters. This will be called instead of each individual metadata tag to reduce stamp usage.
     calc['factor_list'] = [metadata['factorC'], metadata['factorD'], metadata['factorE'], metadata['lower'], metadata['upper'], metadata['multiplier'], metadata['STR_bonus']]
+
+def defense_factor(factorA, factorB, defense):
+    DF = factorA * defense + (factorB * defense) ** 3
+    return DF
 
 @export
 def battle(match_id: str):
@@ -174,7 +212,8 @@ def battle(match_id: str):
     total_fort = data[match_id,'total_fort']
     assert total_cstl == total_fort and total_cstl == data[match_id, 'battle_size'], f'There are {total_cstl} CSTL and {total_fort} FORT staked. These must be equal and filled to max capacity for a battle to be initiated.'
     operator = metadata['operator']
-    terrains = ['random','none', 'fields', 'forests', 'hills', 'chaotic']
+
+    terrains = metadata['terrains']
     if data[match_id, 'terrain'] == 0 :
         terrain_type = terrains[random.randint(1, 5)]
     else:
@@ -349,13 +388,10 @@ def calc_army_update(factorC, factorD, BATTLE_M_MULT, BATTLE_R_MULT, IN_PARAM, A
         L_ARMY_MD = (L_UNITS_IN * IN_PARAM[1] + L_UNITS_AR * AR_PARAM[1] + L_UNITS_HI * HI_PARAM[1] + L_UNITS_CA * CA_PARAM[1] + L_UNITS_CP * CP_PARAM[1]) #add all other L unit DEFENSE here when other units are added
         L_ARMY_RS = (L_UNITS_IN * IN_PARAM[2] + L_UNITS_AR * AR_PARAM[2] + L_UNITS_HI * HI_PARAM[2] + L_UNITS_CA * CA_PARAM[2] + L_UNITS_CP * CP_PARAM[2]) * BATTLE_R_MULT
         L_ARMY_RD = (L_UNITS_IN * IN_PARAM[3] + L_UNITS_AR * AR_PARAM[3] + L_UNITS_HI * HI_PARAM[3] + L_UNITS_CA * CA_PARAM[3] + L_UNITS_CP * CP_PARAM[3])
-        L_ARMY_AVG_MS = L_ARMY_MS / L_UNITS_TOTAL
-        L_ARMY_AVG_RS = L_ARMY_RS / L_UNITS_TOTAL
-        L_ARMY_MS_FACTOR = factorC * L_ARMY_AVG_MS + factorD ** L_ARMY_AVG_MS
-        L_ARMY_RS_FACTOR = factorC * L_ARMY_AVG_RS + factorD ** L_ARMY_AVG_RS
+        L_ARMY_MS_FACTOR = factorC * (L_ARMY_MS / L_UNITS_TOTAL) + factorD ** (L_ARMY_MS / L_UNITS_TOTAL)
+        L_ARMY_RS_FACTOR = factorC * (L_ARMY_RS / L_UNITS_TOTAL) + factorD ** (L_ARMY_RS / L_UNITS_TOTAL)
         L_ARMY_PROPERTIES = [L_ARMY_MS, L_ARMY_MD, L_ARMY_RS, L_ARMY_RD, L_ARMY_MS_FACTOR, L_ARMY_RS_FACTOR]
-
-    if L_UNITS_TOTAL <= 0:
+    else:
         L_ARMY_PROPERTIES=[0,0,0,0,0,0]
 
     if D_UNITS_TOTAL > 0:
@@ -364,13 +400,10 @@ def calc_army_update(factorC, factorD, BATTLE_M_MULT, BATTLE_R_MULT, IN_PARAM, A
         D_ARMY_MD = (D_UNITS_GO * GO_PARAM[1] + D_UNITS_OA * OA_PARAM[1] + D_UNITS_OR * OR_PARAM[1] + D_UNITS_WO * WO_PARAM[1] + D_UNITS_TR * TR_PARAM[1])
         D_ARMY_RS = (D_UNITS_GO * GO_PARAM[2] + D_UNITS_OA * OA_PARAM[2] + D_UNITS_OR * OR_PARAM[2] + D_UNITS_WO * WO_PARAM[2] + D_UNITS_TR * TR_PARAM[2]) * BATTLE_R_MULT
         D_ARMY_RD = (D_UNITS_GO * GO_PARAM[3] + D_UNITS_OA * OA_PARAM[3] + D_UNITS_OR * OR_PARAM[3] + D_UNITS_WO * WO_PARAM[3] + D_UNITS_TR * TR_PARAM[3])
-        D_ARMY_AVG_MS = D_ARMY_MS / D_UNITS_TOTAL
-        D_ARMY_AVG_RS = D_ARMY_RS / D_UNITS_TOTAL
-        D_ARMY_MS_FACTOR = factorC * D_ARMY_AVG_MS + factorD ** D_ARMY_AVG_MS
-        D_ARMY_RS_FACTOR = factorC * D_ARMY_AVG_RS + factorD ** D_ARMY_AVG_RS
+        D_ARMY_MS_FACTOR = factorC * (D_ARMY_MS / D_UNITS_TOTAL) + factorD ** (D_ARMY_MS / D_UNITS_TOTAL)
+        D_ARMY_RS_FACTOR = factorC * (D_ARMY_RS / D_UNITS_TOTAL) + factorD ** (D_ARMY_RS / D_UNITS_TOTAL)
         D_ARMY_PROPERTIES = [D_ARMY_MS, D_ARMY_MD, D_ARMY_RS, D_ARMY_RD, D_ARMY_MS_FACTOR, D_ARMY_RS_FACTOR]
-
-    if D_UNITS_TOTAL <= 0:
+    else:
         D_ARMY_PROPERTIES=[0,0,0,0,0,0]
 
     UNITS_TOTAL = [L_UNITS_TOTAL, D_UNITS_TOTAL, L_ARMY_PROPERTIES, D_ARMY_PROPERTIES]
@@ -380,8 +413,7 @@ def calc_army_update(factorC, factorD, BATTLE_M_MULT, BATTLE_R_MULT, IN_PARAM, A
 def disperse(operator, winner, match_id):
     #calculate winnings where winners get 1.09, loser gets 0.90 and house gets 0.01
 
-    cstl = importlib.import_module(cstl_contract.get())
-    fort = importlib.import_module(fort_contract.get())
+    SC = importlib.import_module(cstl_contract.get())
     cstl_staked_wallets = data[match_id, 'cstl_staked_wallets']
     fort_staked_wallets = data[match_id, 'fort_staked_wallets']
     winner_percent = metadata['winner_percent']
@@ -391,21 +423,19 @@ def disperse(operator, winner, match_id):
     if winner == 'Castle':
         #send winnings to CASTLE stakers
         for key, value in dict(cstl_staked_wallets).items():
-            cstl.transfer(amount=value, to=key)
-            fort.transfer(amount= (value * winner_percent), to=key)
-            fort.transfer(amount= (value * house_percent), to=operator) #make variable for OWNER
+            SC.transfer(amount=value * (1 + winner_percent) , to=key)
+            SC.transfer(amount= (value * house_percent), to=operator) #make variable for OWNER
 
         for key, value in dict(fort_staked_wallets).items():
-            fort.transfer(amount= (value * loser_percent), to=key)
+            SC.transfer(amount= (value * loser_percent), to=key)
     if winner == 'Fortress':
         #send winnings to FORTRESS stakers
         for key, value in dict(fort_staked_wallets).items():
-            fort.transfer(amount=value, to=key)
-            cstl.transfer(amount= (value * winner_percent), to=key)
-            cstl.transfer(amount= (value * house_percent), to=operator)
+            SC.transfer(amount=value * (1 + winner_percent), to=key)
+            SC.transfer(amount= (value * house_percent), to=operator)
 
         for key, value in dict(cstl_staked_wallets).items():
-            cstl.transfer(amount= (value * loser_percent), to=key)
+            SC.transfer(amount= (value * loser_percent), to=key)
 
     data[match_id, 'cstl_staked_wallets'] = {} #clears all staked wallets from storage so a new battle can start
     data[match_id, 'fort_staked_wallets'] = {}
@@ -512,7 +542,6 @@ def new_match(match_id : str, terrain: int, private : bool, battle_size : int = 
     data[match_id, 'cstl_staked_wallets'] = {}
     data[match_id, 'fort_staked_wallets'] = {}
 
-
     data[match_id, 'L_units'] = {
         "IN": 0,
         "AR": 0,
@@ -550,18 +579,16 @@ def cancel_match(match_id : str):
     tokens = data[match_id, 'battle_size']
     assert tokens > (data[match_id, 'total_cstl'] + data[match_id, 'total_fort']), 'The match is over half full and can no longer be cancelled.'
 
-    cstl = importlib.import_module(cstl_contract.get())
-    fort = importlib.import_module(fort_contract.get())
+    SC = importlib.import_module(cstl_contract.get())
 
     cstl_staked_wallets = data[match_id, 'cstl_staked_wallets']
     fort_staked_wallets = data[match_id, 'fort_staked_wallets']
 
-
     for key, value in dict(cstl_staked_wallets).items():
-        cstl.transfer(amount=value, to=key)
+        SC.transfer(amount=value, to=key)
 
     for key, value in dict(fort_staked_wallets).items():
-        fort.transfer(amount=value, to=key)
+        SC.transfer(amount=value, to=key)
 
     data[match_id, 'cstl_staked_wallets'] = {} #clears all staked wallets from storage so a new battle can start
     data[match_id, 'fort_staked_wallets'] = {}
@@ -573,6 +600,8 @@ def cancel_match(match_id : str):
 
     data[match_id, 'L_units'] = {}
     data[match_id, 'D_units'] = {}
+
+#Add data to store winner for each match, and then add a reset function for only me to run, so I can check balance of factions long term and reset after I update a parameter.
 
 @export
 def reset_stats():
