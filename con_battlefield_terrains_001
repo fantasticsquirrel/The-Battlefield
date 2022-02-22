@@ -1,0 +1,45 @@
+metadata = Hash()
+
+@construct
+def seed():
+    metadata['operator'] = ctx.caller
+    metadata['terrains'] = ['random','none', 'fields', 'forests', 'hills', 'chaotic']
+
+@export
+def change_metadata(key: str, new_value: str):
+    assert ctx.caller == metadata['operator'], "Only the operator can set metadata."
+    metadata[key] = new_value
+
+@export
+def battle_mult_update(terrain_type: str, battle_turn: int): # ['none', 'fields', 'forests', 'hills', 'chaotic']
+    if terrain_type == 'none':
+        battle_m_mult = 1
+        battle_r_mult = 1
+
+    if terrain_type == 'fields':
+        battle_m_mult = battle_turn * 0.05 + 0.25
+        battle_r_mult = 1 - (battle_turn * 0.04)
+
+    if terrain_type == 'forests':
+        battle_m_mult = 1 - (battle_turn * 0.04)
+        battle_r_mult = battle_turn * 0.05 + 0.25
+
+    if terrain_type == 'hills':
+        if (battle_turn % 2) == 0:
+            battle_m_mult = 0.75 - (battle_turn * 0.05)
+            battle_r_mult = 0.75 + (battle_turn * 0.05)
+        else:
+            battle_m_mult = 0.75 + (battle_turn * 0.05)
+            battle_r_mult = 0.75 - (battle_turn * 0.05)
+
+    if terrain_type == 'chaotic':
+        battle_m_mult = random.randint(0, 100) * 0.01
+        battle_r_mult = random.randint(0, 100) * 0.01
+
+    if battle_m_mult > 1 : battle_m_mult = 1
+    if battle_m_mult < 0.25 : battle_m_mult = 0.25
+    if battle_r_mult > 1 : battle_r_mult = 1
+    if battle_r_mult < 0.25 : battle_r_mult = 0.25
+
+    battle_mult = [battle_m_mult, battle_r_mult]
+    return battle_mult
