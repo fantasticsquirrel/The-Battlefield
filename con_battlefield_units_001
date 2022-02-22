@@ -1,0 +1,171 @@
+metadata = Hash()
+param_calc = Hash()
+data = Hash(default_value=0)
+sc_contract = Variable()
+random.seed()
+
+@construct
+def seed():
+    metadata['operator'] = ctx.caller
+
+    #battle factors
+    metadata['factorA'] = decimal('2.0')
+    metadata['factorB'] = decimal('0.35')
+    metadata['factorC'] = decimal('0.1')
+    metadata['factorD'] = decimal('1.09')
+    metadata['factorE'] = decimal('1.005')
+    metadata['lower'] = decimal('100.0')
+    metadata['upper'] = decimal('100.0')
+    metadata['multiplier'] = decimal('5.0')
+    metadata['STR_bonus'] = decimal('0.50')
+
+    #LIGHT Unit Base Parameters
+    metadata['IN_MS'] = decimal('2.0')
+    metadata['IN_MD'] = decimal('1.0')
+    metadata['IN_RS'] = decimal('0.0')
+    metadata['IN_RD'] = decimal('1.0')
+
+    metadata['AR_MS'] = decimal('0.5')
+    metadata['AR_MD'] = decimal('1.0')
+    metadata['AR_RS'] = decimal('5.0')
+    metadata['AR_RD'] = decimal('2.0')
+
+    metadata['HI_MS'] = decimal('3.0')
+    metadata['HI_MD'] = decimal('5.0')
+    metadata['HI_RS'] = decimal('0.0')
+    metadata['HI_RD'] = decimal('4.0')
+
+    metadata['CA_MS'] = decimal('7.0')
+    metadata['CA_MD'] = decimal('4.0')
+    metadata['CA_RS'] = decimal('2.0')
+    metadata['CA_RD'] = decimal('3.0')
+
+    metadata['CP_MS'] = decimal('0.0')
+    metadata['CP_MD'] = decimal('5.0')
+    metadata['CP_RS'] = decimal('15.0')
+    metadata['CP_RD'] = decimal('10.0')
+
+    #DARK Unit Base Parameters
+    metadata['GO_MS'] = decimal('1.0')
+    metadata['GO_MD'] = decimal('0.75')
+    metadata['GO_RS'] = decimal('0.0')
+    metadata['GO_RD'] = decimal('0.75')
+
+    metadata['OA_MS'] = decimal('2.0')
+    metadata['OA_MD'] = decimal('1.0')
+    metadata['OA_RS'] = decimal('6.0')
+    metadata['OA_RD'] = decimal('2.0')
+
+    metadata['OR_MS'] = decimal('3.0')
+    metadata['OR_MD'] = decimal('2.0')
+    metadata['OR_RS'] = decimal('1.0')
+    metadata['OR_RD'] = decimal('2.0')
+
+    metadata['WO_MS'] = decimal('5.0')
+    metadata['WO_MD'] = decimal('5.0')
+    metadata['WO_RS'] = decimal('0.0')
+    metadata['WO_RD'] = decimal('3.0')
+
+    metadata['TR_MS'] = decimal('15.0')
+    metadata['TR_MD'] = decimal('10.0')
+    metadata['TR_RS'] = decimal('2.0')
+    metadata['TR_RD'] = decimal('8.0')
+
+    sc_contract.set('con_silver_credits')
+
+@export
+def update_units_factors():
+
+    factorA = metadata['factorA']
+    factorB = metadata['factorB']
+    IN_MS = metadata['IN_MS']
+    IN_MD = metadata['IN_MD']
+    IN_RS = metadata['IN_RS']
+    IN_RD = metadata['IN_RD']
+    AR_MS = metadata['AR_MS']
+    AR_MD = metadata['AR_MD']
+    AR_RS = metadata['AR_RS']
+    AR_RD = metadata['AR_RD']
+    HI_MS = metadata['HI_MS']
+    HI_MD = metadata['HI_MD']
+    HI_RS = metadata['HI_RS']
+    HI_RD = metadata['HI_RD']
+    CA_MS = metadata['CA_MS']
+    CA_MD = metadata['CA_MD']
+    CA_RS = metadata['CA_RS']
+    CA_RD = metadata['CA_RD']
+    CP_MS = metadata['CP_MS']
+    CP_MD = metadata['CP_MD']
+    CP_RS = metadata['CP_RS']
+    CP_RD = metadata['CP_RD']
+
+    GO_MS = metadata['GO_MS']
+    GO_MD = metadata['GO_MD']
+    GO_RS = metadata['GO_RS']
+    GO_RD = metadata['GO_RD']
+    OA_MS = metadata['OA_MS']
+    OA_MD = metadata['OA_MD']
+    OA_RS = metadata['OA_RS']
+    OA_RD = metadata['OA_RD']
+    OR_MS = metadata['OR_MS']
+    OR_MD = metadata['OR_MD']
+    OR_RS = metadata['OR_RS']
+    OR_RD = metadata['OR_RD']
+    WO_MS = metadata['WO_MS']
+    WO_MD = metadata['WO_MD']
+    WO_RS = metadata['WO_RS']
+    WO_RD = metadata['WO_RD']
+    TR_MS = metadata['TR_MS']
+    TR_MD = metadata['TR_MD']
+    TR_RS = metadata['TR_RS']
+    TR_RD = metadata['TR_RD']
+
+    #LIGHT Unit Parameter factors
+    IN_MDF = defense_factor(factorA, factorB, IN_MD)
+    IN_RDF = defense_factor(factorA, factorB, IN_RD)
+    AR_MDF = defense_factor(factorA, factorB, AR_MD)
+    AR_RDF = defense_factor(factorA, factorB, AR_RD)
+    HI_MDF = defense_factor(factorA, factorB, HI_MD)
+    HI_RDF = defense_factor(factorA, factorB, HI_RD)
+    CA_MDF = defense_factor(factorA, factorB, CA_MD)
+    CA_RDF = defense_factor(factorA, factorB, CA_RD)
+    CP_MDF = defense_factor(factorA, factorB, CP_MD)
+    CP_RDF = defense_factor(factorA, factorB, CP_RD)
+
+    param_calc['IN','PARAM'] = [IN_MS, IN_MD, IN_RS, IN_RD, IN_MDF, IN_RDF, 0.0, GO_MS, GO_RS] #ADD STRENGTHS AND WEAKNESSES TO UNIT PARAMS
+    param_calc['AR','PARAM'] = [AR_MS, AR_MD, AR_RS, AR_RD, AR_MDF, AR_RDF, 0.0, OR_MS, OR_RS] #ADD STRENGTHS AND WEAKNESSES TO UNIT PARAMS
+    param_calc['HI','PARAM'] = [HI_MS, HI_MD, HI_RS, HI_RD, HI_MDF, HI_RDF, 0.0, WO_MS, WO_RS] #ADD STRENGTHS AND WEAKNESSES TO UNIT PARAMS
+    param_calc['CA','PARAM'] = [CA_MS, CA_MD, CA_RS, CA_RD, CA_MDF, CA_RDF, 0.0, OA_MS, OA_RS] #ADD STRENGTHS AND WEAKNESSES TO UNIT PARAMS
+    param_calc['CP','PARAM'] = [CP_MS, CP_MD, CP_RS, CP_RD, CP_MDF, CP_RDF, 0.0, TR_MS, TR_RS] #ADD STRENGTHS AND WEAKNESSES TO UNIT PARAMS
+
+    #DARK Unit Parameter factors
+    GO_MDF = defense_factor(factorA, factorB, GO_MD)
+    GO_RDF = defense_factor(factorA, factorB, GO_RD)
+    OA_MDF = defense_factor(factorA, factorB, OA_MD)
+    OA_RDF = defense_factor(factorA, factorB, OA_RD)
+    OR_MDF = defense_factor(factorA, factorB, OR_MD)
+    OR_RDF = defense_factor(factorA, factorB, OR_RD)
+    WO_MDF = defense_factor(factorA, factorB, WO_MD)
+    WO_RDF = defense_factor(factorA, factorB, WO_RD)
+    TR_MDF = defense_factor(factorA, factorB, TR_MD)
+    TR_RDF = defense_factor(factorA, factorB, TR_RD)
+
+    param_calc['GO','PARAM'] = [GO_MS, GO_MD, GO_RS, GO_RD, GO_MDF, GO_RDF, 0.0, HI_MS, HI_RS]
+    param_calc['OA','PARAM'] = [OA_MS, OA_MD, OA_RS, OA_RD, OA_MDF, OA_RDF, 0.0, IN_MS, IN_RS]
+    param_calc['OR','PARAM'] = [OR_MS, OR_MD, OR_RS, OR_RD, OR_MDF, OR_RDF, 0.0, CP_MS, CP_RS]
+    param_calc['WO','PARAM'] = [WO_MS, WO_MD, WO_RS, WO_RD, WO_MDF, WO_RDF, 0.0, AR_MS, AR_RS]
+    param_calc['TR','PARAM'] = [TR_MS, TR_MD, TR_RS, TR_RD, TR_MDF, TR_RDF, 0.0, CA_MS, CA_RS]
+
+    #update param_calc list from metadata parameters. This will be called instead of each individual metadata tag to reduce stamp usage.
+    param_calc['factor_list'] = [metadata['factorC'], metadata['factorD'], metadata['factorE'], metadata['lower'], metadata['upper'], metadata['multiplier'], metadata['STR_bonus']]
+
+def defense_factor(factorA, factorB, defense):
+    DF = factorA * defense + (factorB * defense) ** 3
+    return DF
+
+@export
+def change_metadata(key: str, new_value: str, convert_to_decimal: bool=False):
+    assert ctx.caller == metadata['operator'], "only operator can set metadata"
+    if convert_to_decimal:
+        new_value = decimal(new_value)
+    metadata[key] = new_value
